@@ -42,9 +42,29 @@
             </li>
           </ul>
         </template>
-        <div :class="$style.note">
-          Слой 2 (цены trade2) и стратегия — следующие этапы.
-        </div>
+        <template v-if="analysis.modifiable">
+          <div v-if="!config.openRouterKey" :class="$style.keyRow">
+            <input
+              v-model="keyInput"
+              type="password"
+              placeholder="OpenRouter API-ключ"
+              :class="$style.keyInput"
+            />
+            <button :class="$style.btn" @click="saveKey">Сохранить ключ</button>
+          </div>
+          <button
+            v-else
+            :class="$style.btn"
+            :disabled="strategyLoading"
+            @click="getStrategy"
+          >
+            {{ strategyLoading ? "Думаю…" : "🛠 План крафта (Claude)" }}
+          </button>
+          <div v-if="strategyError" :class="$style.error">
+            {{ strategyError }}
+          </div>
+          <div v-if="strategy" :class="$style.strategy">{{ strategy }}</div>
+        </template>
       </template>
       <div v-else :class="$style.empty">
         Наведись на предмет и нажми хоткей.
@@ -71,6 +91,8 @@ export default {
         wmZorder: "exclusive",
         wmFlags: ["hide-on-blur", "menu::skip"],
         hotkey: "Ctrl + E",
+        openRouterKey: "",
+        strategyModel: "anthropic/claude-sonnet-4",
       };
     },
   } satisfies WidgetSpec,
@@ -84,6 +106,8 @@ import { parseClipboard, ParsedItem } from "@/parser";
 import type { WidgetManager } from "../overlay/interfaces";
 import { analyzeAffixSlots } from "./layer0";
 import { narrowCandidates } from "./layer1";
+import { buildStrategyPrompt } from "./strategy-prompt";
+import { requestStrategy } from "./strategy-client";
 
 import Widget from "../overlay/Widget.vue";
 
@@ -114,6 +138,43 @@ const analysis = computed(() =>
 const candidates = computed(() =>
   analysis.value ? narrowCandidates(analysis.value) : [],
 );
+
+const strategy = ref<string | null>(null);
+const strategyLoading = ref(false);
+const strategyError = ref<string | null>(null);
+
+const keyInput = ref("");
+function saveKey() {
+  props.config.openRouterKey = keyInput.value.trim();
+}
+
+async function getStrategy() {
+  if (!analysis.value) return;
+  strategyLoading.value = true;
+  strategyError.value = null;
+  strategy.value = null;
+  try {
+    const prompt = buildStrategyPrompt({
+      analysis: analysis.value,
+      candidates: candidates.value,
+    });
+    strategy.value = await requestStrategy(prompt, {
+      apiKey: props.config.openRouterKey,
+      model: props.config.strategyModel,
+    });
+  } catch (e) {
+    strategyError.value = (e as Error).message;
+  } finally {
+    strategyLoading.value = false;
+  }
+}
+
+// Сбрасываем стратегию при новом предмете
+MainProcess.onEvent("MAIN->CLIENT::item-text", (e) => {
+  if (e.target !== "craft-advisor") return;
+  strategy.value = null;
+  strategyError.value = null;
+});
 
 const anchor = computed(() => {
   const width = wm.size.value.width;
@@ -181,5 +242,29 @@ const anchor = computed(() => {
 }
 .improve {
   @apply text-yellow-400 font-bold;
+}
+.btn {
+  @apply mt-3 w-full px-2 py-1 rounded bg-gray-700 text-gray-100 text-sm;
+}
+.btn:hover:not(:disabled) {
+  @apply bg-gray-600;
+}
+.btn:disabled {
+  @apply opacity-60;
+}
+.error {
+  @apply mt-2 text-xs text-red-400;
+}
+.strategy {
+  @apply mt-2 text-sm text-gray-100 whitespace-pre-wrap;
+  max-height: 22rem;
+  overflow-y: auto;
+}
+.keyRow {
+  @apply mt-3 flex flex-col gap-1;
+}
+.keyInput {
+  @apply px-2 py-1 rounded bg-gray-900 text-gray-100 text-sm;
+  border: 1px solid theme("colors.gray.600");
 }
 </style>

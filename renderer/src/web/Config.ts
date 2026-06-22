@@ -157,7 +157,7 @@ export interface Config {
 }
 
 export const defaultConfig = (): Config => ({
-  configVersion: 35,
+  configVersion: 36,
   overlayKey: "Shift + Space",
   overlayBackground: "rgba(129, 139, 149, 0.15)",
   overlayBackgroundClose: true,
@@ -680,6 +680,17 @@ function upgradeConfig(_config: Config): Config {
       });
     }
     config.configVersion = 35;
+  }
+
+  if (config.configVersion < 36) {
+    // BRMCRAFT: поля Слоя 5 (стратегия через OpenRouter)
+    const ca = config.widgets.find((w) => w.wmType === "craft-advisor");
+    if (ca) {
+      if (ca.openRouterKey === undefined) ca.openRouterKey = "";
+      if (ca.strategyModel === undefined)
+        ca.strategyModel = "anthropic/claude-sonnet-4";
+    }
+    config.configVersion = 36;
   }
   /* eslint-enable */
 
