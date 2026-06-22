@@ -500,5 +500,8 @@
     "output_folder": "Output Folder",
     "output_file_help": "Some info text",
     "record_count": "Session Rolls:"
+  },
+  "craft_advisor": {
+    "name": "Craft Advisor"
   }
 }

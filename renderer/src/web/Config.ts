@@ -5,6 +5,7 @@ import { HostConfig, ShortcutAction } from "@ipc/types";
 import type * as widget from "./overlay/widgets";
 import type { StashSearchWidget } from "./stash-search/widget";
 import type { ItemCheckWidget } from "./item-check/widget";
+import type { CraftAdvisorWidget } from "./craft-advisor/widget";
 import type { ItemSearchWidget } from "./item-search/widget";
 import { registry as widgetRegistry } from "./overlay/widget-registry.js";
 import { LibraryWidget } from "./library/widget";
@@ -156,7 +157,7 @@ export interface Config {
 }
 
 export const defaultConfig = (): Config => ({
-  configVersion: 34,
+  configVersion: 35,
   overlayKey: "Shift + Space",
   overlayBackground: "rgba(129, 139, 149, 0.15)",
   overlayBackgroundClose: true,
@@ -669,6 +670,17 @@ function upgradeConfig(_config: Config): Config {
 
     config.configVersion = 34;
   }
+
+  if (config.configVersion < 35) {
+    // BRMCRAFT: добавляем виджет Craft Advisor в существующие конфиги
+    if (!config.widgets.find((w) => w.wmType === "craft-advisor")) {
+      config.widgets.push({
+        ...defaultConfig().widgets.find((w) => w.wmType === "craft-advisor")!,
+        wmId: Math.max(0, ...config.widgets.map((_) => _.wmId)) + 1,
+      });
+    }
+    config.configVersion = 35;
+  }
   /* eslint-enable */
 
   return config as unknown as Config;
@@ -731,6 +743,13 @@ function getConfigForHost(): HostConfig {
     actions.push({
       shortcut: itemCheck.hotkey,
       action: { type: "copy-item", target: "item-check", focusOverlay: true },
+    });
+  }
+  const craftAdvisor = AppConfig("craft-advisor") as CraftAdvisorWidget;
+  if (craftAdvisor.hotkey) {
+    actions.push({
+      shortcut: craftAdvisor.hotkey,
+      action: { type: "copy-item", target: "craft-advisor", focusOverlay: true },
     });
   }
   const library = AppConfig("library") as LibraryWidget;
