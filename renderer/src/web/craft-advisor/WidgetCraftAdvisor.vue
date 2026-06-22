@@ -357,7 +357,10 @@ const anchor = computed(() => {
   @apply opacity-60;
 }
 .error {
-  @apply mt-2 text-xs text-red-400;
+  @apply mt-2 text-xs text-red-400 whitespace-pre-wrap break-all select-text;
+  max-height: 12rem;
+  overflow-y: auto;
+  user-select: text;
 }
 .strategy {
   @apply mt-2 text-sm text-gray-100 whitespace-pre-wrap;

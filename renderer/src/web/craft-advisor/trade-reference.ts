@@ -6,6 +6,7 @@ import {
   type PricingResult,
 } from "@/web/price-check/trade/pathofexile-trade";
 import { createPresets } from "@/web/price-check/filters/create-presets";
+import { getTradeEndpoint } from "@/web/price-check/trade/common";
 import { useLeagues } from "@/web/background/Leagues";
 import { AppConfig } from "@/web/Config";
 import type { PriceCheckWidget } from "@/web/overlay/interfaces";
@@ -87,7 +88,16 @@ export async function fetchReference(
   // «Часть твоих свойств»: ищем по базе (без жёстких стат-фильтров), затем
   // diff покажет общие/недостающие моды. Эталон по дорогому концу — тюним живьём.
   const body = createTradeRequest(preset.filters, [], item);
-  const list = await requestTradeResultList(body, league);
+
+  let list;
+  try {
+    list = await requestTradeResultList(body, league);
+  } catch (e) {
+    // Диагностика: прикладываем точное тело и endpoint для воспроизведения
+    throw new Error(
+      `${(e as Error).message}\n\n— endpoint: ${getTradeEndpoint()} · лига: ${league}\n— preset: ${preset.id}\n— query: ${JSON.stringify(body.query)}`,
+    );
+  }
   const ids = list.result.slice(0, limit);
   if (ids.length === 0) return [];
 
