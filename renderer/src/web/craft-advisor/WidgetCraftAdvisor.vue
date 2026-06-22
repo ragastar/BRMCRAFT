@@ -9,22 +9,42 @@
       <div :class="$style.header">
         <span :class="$style.brand">BRM</span> Craft Advisor
       </div>
-      <template v-if="item">
+      <template v-if="item && analysis">
         <div :class="$style.itemName">
           {{ item.info.name || item.info.refName }}
         </div>
-        <div :class="$style.base">{{ item.info.refName }}</div>
-        <div :class="$style.rows">
+        <div :class="$style.base">
+          {{ item.info.refName }} · iLvl {{ item.itemLevel ?? "—" }}
+        </div>
+
+        <div v-if="analysis.modifiable" :class="$style.rows">
           <div :class="$style.row">
-            <span :class="$style.k">iLvl</span>
-            <span>{{ item.itemLevel ?? "—" }}</span>
+            <span :class="$style.k">Префиксы</span>
+            <span>{{ analysis.prefixes.occupied.length }}/{{ analysis.prefixes.max }}</span>
           </div>
           <div :class="$style.row">
-            <span :class="$style.k">Модов</span>
-            <span>{{ modCount }}</span>
+            <span :class="$style.k">Суффиксы</span>
+            <span>{{ analysis.suffixes.occupied.length }}/{{ analysis.suffixes.max }}</span>
           </div>
         </div>
-        <div :class="$style.note">Слой 0 (парсинг + слоты) — скоро.</div>
+        <div v-else :class="$style.note">
+          Предмет не крафтится (не rare/magic).
+        </div>
+
+        <template v-if="candidates.length">
+          <div :class="$style.subhead">Кандидаты на проверку</div>
+          <ul :class="$style.candidates">
+            <li v-for="(c, i) in candidates" :key="i" :class="$style.candidate">
+              <span :class="c.kind === 'fill-slot' ? $style.fill : $style.improve">
+                {{ c.kind === "fill-slot" ? "+" : "↑" }}
+              </span>
+              {{ c.reason }}
+            </li>
+          </ul>
+        </template>
+        <div :class="$style.note">
+          Слой 2 (цены trade2) и стратегия — следующие этапы.
+        </div>
       </template>
       <div v-else :class="$style.empty">
         Наведись на предмет и нажми хоткей.
@@ -62,6 +82,8 @@ import { computed, inject, ref } from "vue";
 import { MainProcess } from "@/web/background/IPC";
 import { parseClipboard, ParsedItem } from "@/parser";
 import type { WidgetManager } from "../overlay/interfaces";
+import { analyzeAffixSlots } from "./layer0";
+import { narrowCandidates } from "./layer1";
 
 import Widget from "../overlay/Widget.vue";
 
@@ -86,8 +108,11 @@ MainProcess.onEvent("MAIN->CLIENT::item-text", (e) => {
 
 props.config.wmWants = "hide";
 
-const modCount = computed(
-  () => (item.value?.statsByType?.length ?? item.value?.newMods?.length ?? 0),
+const analysis = computed(() =>
+  item.value ? analyzeAffixSlots(item.value) : null,
+);
+const candidates = computed(() =>
+  analysis.value ? narrowCandidates(analysis.value) : [],
 );
 
 const anchor = computed(() => {
@@ -137,9 +162,24 @@ const anchor = computed(() => {
   @apply text-gray-400;
 }
 .note {
-  @apply text-xs text-gray-500 mt-1;
+  @apply text-xs text-gray-500 mt-2;
 }
 .empty {
   @apply text-xs text-gray-500;
+}
+.subhead {
+  @apply text-xs font-semibold text-gray-300 mt-2 mb-1;
+}
+.candidates {
+  @apply flex flex-col gap-1;
+}
+.candidate {
+  @apply text-sm text-gray-200 flex gap-2 items-start;
+}
+.fill {
+  @apply text-green-400 font-bold;
+}
+.improve {
+  @apply text-yellow-400 font-bold;
 }
 </style>
