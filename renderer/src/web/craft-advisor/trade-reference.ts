@@ -15,6 +15,44 @@ import type { ReferenceListing } from "./diff";
 // fetchReference переиспользует пайплайн EE2 (createPresets → createTradeRequest
 // → requestTradeResultList → requestResults), лимиты/кеш — внутри них.
 
+type PresetOpts = Parameters<typeof createPresets>[1];
+
+interface ConfigBits {
+  language: string;
+  realm: string;
+  preferredTradeSite: string;
+}
+interface PcBits {
+  collapseListings: PriceCheckWidget["collapseListings"];
+  activateStockFilter: boolean;
+  searchStatRange: number;
+  defaultAllSelected: boolean;
+  autoFillEmptyRuneSockets: PriceCheckWidget["autoFillEmptyRuneSockets"];
+}
+
+// Повторяет ровно формулу price-check (CheckedItem.vue). Расхождение в useEn
+// строило query.type локализованным именем базы и ломало запрос на www-endpoint
+// («Invalid query»). currency/listingType не форсим — как в price-check.
+export function buildReferenceOpts(
+  config: ConfigBits,
+  pc: PcBits,
+  league: string,
+): PresetOpts {
+  return {
+    league,
+    collapseListings: pc.collapseListings,
+    activateStockFilter: pc.activateStockFilter,
+    searchStatRange: pc.searchStatRange,
+    useEn:
+      (config.language === "cmn-Hant" && config.realm === "pc-ggg") ||
+      config.preferredTradeSite === "www",
+    currency: undefined,
+    listingType: undefined,
+    defaultAllSelected: pc.defaultAllSelected,
+    autoFillEmptyAugmentSockets: pc.autoFillEmptyRuneSockets,
+  };
+}
+
 export function pricingResultToReference(r: PricingResult): ReferenceListing {
   const di = r.displayItem;
   const lines = [
@@ -39,17 +77,10 @@ export async function fetchReference(
   const pc = AppConfig<PriceCheckWidget>("price-check")!;
   const config = AppConfig();
 
-  const { presets, active } = createPresets(item, {
-    league,
-    currency: pc.coreCurrency,
-    listingType: "securable",
-    collapseListings: pc.collapseListings,
-    activateStockFilter: pc.activateStockFilter,
-    searchStatRange: pc.searchStatRange,
-    useEn: config.language === "en",
-    defaultAllSelected: pc.defaultAllSelected,
-    autoFillEmptyAugmentSockets: pc.autoFillEmptyRuneSockets,
-  });
+  const { presets, active } = createPresets(
+    item,
+    buildReferenceOpts(config, pc, league),
+  );
   const preset = presets.find((p) => p.id === active) ?? presets[0];
   if (!preset) throw new Error("Не удалось построить фильтры для предмета.");
 
