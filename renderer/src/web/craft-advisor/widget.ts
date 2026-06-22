@@ -4,9 +4,11 @@ export interface CraftAdvisorWidget extends Widget {
   // Полный шорткат (напр. "Ctrl + E"). Вызывает панель Craft Advisor
   // на наведённом предмете.
   hotkey: string | null;
-  // OpenRouter API-ключ (Слой 5 — стратегия через Claude). Хранится в конфиге
-  // пользователя, не в коде.
+  // Не используется (легаси): стратегия теперь идёт через локальный claude CLI
+  // на подписке пользователя, API-ключ не нужен. Оставлено для совместимости
+  // со старыми конфигами.
   openRouterKey: string;
-  // Модель OpenRouter (по умолчанию anthropic/claude-sonnet-4).
+  // Модель для claude CLI: псевдоним подписки (sonnet / opus / haiku) или
+  // полный id. Значения с недопустимыми символами санируются до sonnet.
   strategyModel: string;
 }

@@ -16,8 +16,6 @@ const PROXY_HOSTS = [
   { host: "www.poeprices.info", official: false },
   // me :)
   { host: "api.exiledexchange2.dev", official: false },
-  // BRMCRAFT: Claude через OpenRouter (Слой 5 — стратегия крафта)
-  { host: "openrouter.ai", official: false },
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class

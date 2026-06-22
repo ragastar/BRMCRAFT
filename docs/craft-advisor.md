@@ -12,8 +12,11 @@
    - базу, iLvl;
    - занятые/свободные слоты префиксов и суффиксов;
    - кандидатов на крафт (заполнить свободный слот / улучшить слабый мод).
-4. Один раз вставь **OpenRouter API-ключ** в поле панели → «Сохранить ключ».
-5. Нажми «🛠 План крафта» — Claude (через OpenRouter) выдаст план крафта.
+4. Нажми «🛠 План крафта» — Claude выдаст план крафта.
+
+**Стратегия работает через твою подписку Claude Code** (локальный `claude` CLI),
+API-ключ не нужен. Требуется установленный и залогиненный Claude Code на этом
+компьютере.
 
 Хоткей по умолчанию **Ctrl + E** (поле `hotkey` в конфиге виджета).
 
@@ -33,7 +36,7 @@ cd main && npm run dev          # Electron-оверлей (второй шелл
 | 2 — цены trade2 (как-есть + эталон) | — | ⏳ нужна живая сессия PoE |
 | 3 — diff (keep/missing/value-driver) | — | ⏳ |
 | 4 — feasibility (метод + вероятность) | частично в промпте Слоя 5 | ⏳ |
-| 5 — стратегия (текст) | `strategy-prompt.ts`, `strategy-client.ts` | ✅ Claude/OpenRouter |
+| 5 — стратегия (текст) | `strategy-prompt.ts`, `strategy-client.ts`, `main/.../claude-runner.ts` | ✅ Claude через подписку (локальный CLI) |
 | хранилище истории цен | `signature.ts`, `price-history.ts` | ✅ |
 
 ### Важное ограничение
@@ -44,12 +47,13 @@ cd main && npm run dev          # Electron-оверлей (второй шелл
 ## Конфиг виджета
 
 - `hotkey` — шорткат вызова (по умолчанию `Ctrl + E`)
-- `openRouterKey` — ключ OpenRouter (хранится локально, **не в коде**)
-- `strategyModel` — модель (по умолчанию `anthropic/claude-sonnet-4`)
+- `openRouterKey` — легаси, не используется (стратегия идёт через подписку)
+- `strategyModel` — модель для `claude` CLI (по умолчанию `sonnet`; `opus`/`haiku`/полный id)
 
-Правило проекта: Claude вызывается **через OpenRouter**, не напрямую Anthropic
-(прямой API заблокирован из РФ). Хост `openrouter.ai` добавлен в whitelist
-прокси `main/src/proxy.ts`.
+Стратегия вызывается через **локальный `claude` CLI на подписке пользователя**
+(`main/src/craft-advisor/claude-runner.ts` → роут `POST /claude` в
+`main/src/server.ts`). Вызов изолирован: `--system-prompt` заменяет агентный
+промпт, cwd = временная папка (без проектного CLAUDE.md), модель санируется.
 
 ## Тесты
 

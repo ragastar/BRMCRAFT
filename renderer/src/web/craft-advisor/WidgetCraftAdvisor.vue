@@ -43,17 +43,7 @@
           </ul>
         </template>
         <template v-if="analysis.modifiable">
-          <div v-if="!config.openRouterKey" :class="$style.keyRow">
-            <input
-              v-model="keyInput"
-              type="password"
-              placeholder="OpenRouter API-ключ"
-              :class="$style.keyInput"
-            />
-            <button :class="$style.btn" @click="saveKey">Сохранить ключ</button>
-          </div>
           <button
-            v-else
             :class="$style.btn"
             :disabled="strategyLoading"
             @click="getStrategy"
@@ -92,7 +82,7 @@ export default {
         wmFlags: ["hide-on-blur", "menu::skip"],
         hotkey: "Ctrl + E",
         openRouterKey: "",
-        strategyModel: "anthropic/claude-sonnet-4",
+        strategyModel: "sonnet",
       };
     },
   } satisfies WidgetSpec,
@@ -143,11 +133,6 @@ const strategy = ref<string | null>(null);
 const strategyLoading = ref(false);
 const strategyError = ref<string | null>(null);
 
-const keyInput = ref("");
-function saveKey() {
-  props.config.openRouterKey = keyInput.value.trim();
-}
-
 async function getStrategy() {
   if (!analysis.value) return;
   strategyLoading.value = true;
@@ -159,7 +144,6 @@ async function getStrategy() {
       candidates: candidates.value,
     });
     strategy.value = await requestStrategy(prompt, {
-      apiKey: props.config.openRouterKey,
       model: props.config.strategyModel,
     });
   } catch (e) {

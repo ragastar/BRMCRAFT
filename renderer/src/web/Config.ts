@@ -687,8 +687,7 @@ function upgradeConfig(_config: Config): Config {
     const ca = config.widgets.find((w) => w.wmType === "craft-advisor");
     if (ca) {
       if (ca.openRouterKey === undefined) ca.openRouterKey = "";
-      if (ca.strategyModel === undefined)
-        ca.strategyModel = "anthropic/claude-sonnet-4";
+      if (ca.strategyModel === undefined) ca.strategyModel = "sonnet";
     }
     config.configVersion = 36;
   }

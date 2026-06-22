@@ -8,6 +8,7 @@ import { app } from "electron";
 import { IpcEvent, IpcEventPayload, HostState } from "../../ipc/types";
 import { ConfigStore } from "./host-files/ConfigStore";
 import { addFileUploadRoutes } from "./host-files/file-uploads";
+import { runClaudePrompt } from "./craft-advisor/claude-runner";
 import type { AppUpdater } from "./AppUpdater";
 import type { Logger } from "./RemoteLogger";
 
@@ -22,7 +23,8 @@ if (!process.env.VITE_DEV_SERVER_URL) {
     if (
       req.url?.startsWith("/config") ||
       req.url?.startsWith("/uploads") ||
-      req.url?.startsWith("/proxy")
+      req.url?.startsWith("/proxy") ||
+      req.url?.startsWith("/claude")
     )
       return;
 
@@ -126,6 +128,31 @@ export async function startServer(
       };
       res.end(JSON.stringify(resBody));
     }
+  });
+
+  // BRMCRAFT Слой 5: запуск локального claude CLI (подписка пользователя)
+  server.addListener("request", (req, res) => {
+    if (req.method !== "POST" || req.url !== "/claude") return;
+    let body = "";
+    req.on("data", (chunk) => (body += chunk.toString("utf-8")));
+    req.once("end", async () => {
+      res.setHeader("content-type", "application/json");
+      try {
+        const { system, user, model } = JSON.parse(body);
+        const result = await runClaudePrompt(
+          String(system ?? ""),
+          String(user ?? ""),
+          String(model ?? "sonnet"),
+        );
+        if (!result.success) res.statusCode = 502;
+        res.end(JSON.stringify(result));
+      } catch (error) {
+        res.statusCode = 400;
+        res.end(
+          JSON.stringify({ success: false, error: (error as Error).message }),
+        );
+      }
+    });
   });
 
   let port = process.env.VITE_DEV_SERVER_URL ? 8584 : 0;
