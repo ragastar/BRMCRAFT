@@ -42,12 +42,41 @@
 
         <!-- 3. Лучшие предметы с частью твоих свойств (trade2) -->
         <div :class="$style.subhead">Лучшие предметы с частью твоих свойств</div>
-        <div :class="$style.note">trade2-поиск эталона — следующим шагом.</div>
+        <button
+          :class="$style.btn"
+          :disabled="refLoading"
+          @click="findReference"
+        >
+          {{ refLoading ? "Ищу на trade2…" : "🔎 Найти эталон (trade2)" }}
+        </button>
+        <div v-if="refError" :class="$style.error">{{ refError }}</div>
+        <ul v-if="topReferences.length" :class="$style.refs">
+          <li v-for="(r, i) in topReferences" :key="i" :class="$style.refItem">
+            <div :class="$style.refPrice">{{ r.price }} {{ r.currency }}</div>
+            <div :class="$style.refMods">{{ r.modLines.slice(0, 4).join(" · ") }}</div>
+          </li>
+        </ul>
 
         <!-- 4. Как скрафтить -->
         <template v-if="analysis.modifiable">
           <div :class="$style.subhead">Как скрафтить</div>
-          <ul :class="$style.candidates">
+          <template v-if="diff">
+            <div :class="$style.craftLabel">Есть у дорогих — оставить:</div>
+            <ul :class="$style.mods">
+              <li v-for="(s, i) in diff.keep" :key="'k' + i" :class="$style.modLine">
+                ✓ {{ s }}
+              </li>
+              <li v-if="!diff.keep.length" :class="$style.note">— ничего из твоего не совпало</li>
+            </ul>
+            <div :class="$style.craftLabel">Добавить (частые у дорогих, у тебя нет):</div>
+            <ul :class="$style.mods">
+              <li v-for="(m, i) in diff.missing.slice(0, 6)" :key="'m' + i" :class="$style.modLine">
+                + {{ m.shape }} <span :class="$style.k">({{ m.count }})</span>
+              </li>
+              <li v-if="!diff.missing.length" :class="$style.note">— нечего добавить</li>
+            </ul>
+          </template>
+          <ul v-else :class="$style.candidates">
             <li v-for="(c, i) in candidates" :key="i" :class="$style.candidate">
               <span :class="c.kind === 'fill-slot' ? $style.fill : $style.improve">
                 {{ c.kind === "fill-slot" ? "+" : "↑" }}
@@ -55,7 +84,7 @@
               {{ c.reason }}
             </li>
             <li v-if="!candidates.length" :class="$style.note">
-              Предмет уже плотный — явных кандидатов нет.
+              Найди эталон выше — посчитаю что добавить. Пока: предмет уже плотный.
             </li>
           </ul>
           <button
@@ -115,6 +144,8 @@ import type { WidgetManager } from "../overlay/interfaces";
 import { analyzeAffixSlots } from "./layer0";
 import { narrowCandidates } from "./layer1";
 import { describeItemMods } from "./item-mods";
+import { diffReference, type ReferenceListing } from "./diff";
+import { fetchReference } from "./trade-reference";
 import { buildStrategyPrompt } from "./strategy-prompt";
 import { requestStrategy } from "./strategy-client";
 
@@ -151,6 +182,35 @@ const itemMods = computed(() =>
   item.value ? describeItemMods(item.value.rawText) : [],
 );
 
+// Слой 2–3: эталон из trade2 + diff
+const references = ref<ReferenceListing[]>([]);
+const refLoading = ref(false);
+const refError = ref<string | null>(null);
+
+const diff = computed(() =>
+  references.value.length
+    ? diffReference(itemMods.value, references.value)
+    : null,
+);
+const topReferences = computed(() =>
+  [...references.value].sort((a, b) => b.price - a.price).slice(0, 5),
+);
+
+async function findReference() {
+  if (!item.value) return;
+  refLoading.value = true;
+  refError.value = null;
+  references.value = [];
+  try {
+    references.value = await fetchReference(item.value);
+    if (!references.value.length) refError.value = "Листингов не найдено.";
+  } catch (e) {
+    refError.value = (e as Error).message;
+  } finally {
+    refLoading.value = false;
+  }
+}
+
 const strategy = ref<string | null>(null);
 const strategyLoading = ref(false);
 const strategyError = ref<string | null>(null);
@@ -180,6 +240,8 @@ MainProcess.onEvent("MAIN->CLIENT::item-text", (e) => {
   if (e.target !== "craft-advisor") return;
   strategy.value = null;
   strategyError.value = null;
+  references.value = [];
+  refError.value = null;
 });
 
 const anchor = computed(() => {
@@ -256,6 +318,22 @@ const anchor = computed(() => {
 }
 .modLine {
   @apply text-gray-100;
+}
+.refs {
+  @apply flex flex-col gap-1 mt-1;
+}
+.refItem {
+  @apply flex flex-col text-sm border-l-2 pl-2;
+  border-color: theme("colors.yellow.600");
+}
+.refPrice {
+  @apply text-yellow-300 font-semibold;
+}
+.refMods {
+  @apply text-xs text-gray-300;
+}
+.craftLabel {
+  @apply text-xs text-gray-400 mt-2 mb-1;
 }
 .candidates {
   @apply flex flex-col gap-1;
