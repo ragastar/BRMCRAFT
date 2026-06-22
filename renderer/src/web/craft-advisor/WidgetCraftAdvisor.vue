@@ -10,29 +10,43 @@
         <span :class="$style.brand">BRM</span> Craft Advisor
       </div>
       <template v-if="item && analysis">
+        <!-- 1. Твой предмет -->
         <div :class="$style.itemName">
           {{ item.info.name || item.info.refName }}
         </div>
         <div :class="$style.base">
-          {{ item.info.refName }} · iLvl {{ item.itemLevel ?? "—" }}
+          {{ item.info.refName }} · iLvl {{ item.itemLevel ?? "—" }} ·
+          П {{ analysis.prefixes.occupied.length }}/{{ analysis.prefixes.max }} ·
+          С {{ analysis.suffixes.occupied.length }}/{{ analysis.suffixes.max }}
         </div>
 
-        <div v-if="analysis.modifiable" :class="$style.rows">
-          <div :class="$style.row">
-            <span :class="$style.k">Префиксы</span>
-            <span>{{ analysis.prefixes.occupied.length }}/{{ analysis.prefixes.max }}</span>
-          </div>
-          <div :class="$style.row">
-            <span :class="$style.k">Суффиксы</span>
-            <span>{{ analysis.suffixes.occupied.length }}/{{ analysis.suffixes.max }}</span>
-          </div>
-        </div>
-        <div v-else :class="$style.note">
-          Предмет не крафтится (не rare/magic).
-        </div>
+        <!-- 2. Свойства (реальные значения, не названия) -->
+        <div :class="$style.subhead">Свойства</div>
+        <ul :class="$style.mods">
+          <li
+            v-for="(m, i) in itemMods"
+            :key="i"
+            :class="$style.mod"
+          >
+            <span :class="m.affix === 'prefix' ? $style.pfx : $style.sfx">
+              {{ m.affix === "prefix" ? "P" : "S" }}<template v-if="m.tier">·T{{ m.tier }}</template>
+            </span>
+            <span :class="$style.modLines">
+              <span v-for="(l, j) in m.lines" :key="j" :class="$style.modLine">{{ l }}</span>
+            </span>
+          </li>
+          <li v-if="!itemMods.length" :class="$style.note">
+            Нет explicit-модов (или буфер без advanced-описаний).
+          </li>
+        </ul>
 
-        <template v-if="candidates.length">
-          <div :class="$style.subhead">Кандидаты на проверку</div>
+        <!-- 3. Лучшие предметы с частью твоих свойств (trade2) -->
+        <div :class="$style.subhead">Лучшие предметы с частью твоих свойств</div>
+        <div :class="$style.note">trade2-поиск эталона — следующим шагом.</div>
+
+        <!-- 4. Как скрафтить -->
+        <template v-if="analysis.modifiable">
+          <div :class="$style.subhead">Как скрафтить</div>
           <ul :class="$style.candidates">
             <li v-for="(c, i) in candidates" :key="i" :class="$style.candidate">
               <span :class="c.kind === 'fill-slot' ? $style.fill : $style.improve">
@@ -40,21 +54,25 @@
               </span>
               {{ c.reason }}
             </li>
+            <li v-if="!candidates.length" :class="$style.note">
+              Предмет уже плотный — явных кандидатов нет.
+            </li>
           </ul>
-        </template>
-        <template v-if="analysis.modifiable">
           <button
             :class="$style.btn"
             :disabled="strategyLoading"
             @click="getStrategy"
           >
-            {{ strategyLoading ? "Думаю…" : "🛠 План крафта (Claude)" }}
+            {{ strategyLoading ? "Думаю…" : "🛠 Подробнее от Claude (опционально)" }}
           </button>
           <div v-if="strategyError" :class="$style.error">
             {{ strategyError }}
           </div>
           <div v-if="strategy" :class="$style.strategy">{{ strategy }}</div>
         </template>
+        <div v-else :class="$style.note">
+          Предмет не крафтится (не rare/magic).
+        </div>
       </template>
       <div v-else :class="$style.empty">
         Наведись на предмет и нажми хоткей.
@@ -96,6 +114,7 @@ import { parseClipboard, ParsedItem } from "@/parser";
 import type { WidgetManager } from "../overlay/interfaces";
 import { analyzeAffixSlots } from "./layer0";
 import { narrowCandidates } from "./layer1";
+import { describeItemMods } from "./item-mods";
 import { buildStrategyPrompt } from "./strategy-prompt";
 import { requestStrategy } from "./strategy-client";
 
@@ -127,6 +146,9 @@ const analysis = computed(() =>
 );
 const candidates = computed(() =>
   analysis.value ? narrowCandidates(analysis.value) : [],
+);
+const itemMods = computed(() =>
+  item.value ? describeItemMods(item.value.rawText) : [],
 );
 
 const strategy = ref<string | null>(null);
@@ -213,7 +235,27 @@ const anchor = computed(() => {
   @apply text-xs text-gray-500;
 }
 .subhead {
-  @apply text-xs font-semibold text-gray-300 mt-2 mb-1;
+  @apply text-xs font-semibold text-gray-300 mt-3 mb-1;
+  border-top: 1px solid theme("colors.gray.700");
+  @apply pt-2;
+}
+.mods {
+  @apply flex flex-col gap-1;
+}
+.mod {
+  @apply flex gap-2 items-start text-sm;
+}
+.pfx {
+  @apply text-blue-300 font-mono text-xs whitespace-nowrap;
+}
+.sfx {
+  @apply text-orange-300 font-mono text-xs whitespace-nowrap;
+}
+.modLines {
+  @apply flex flex-col;
+}
+.modLine {
+  @apply text-gray-100;
 }
 .candidates {
   @apply flex flex-col gap-1;
