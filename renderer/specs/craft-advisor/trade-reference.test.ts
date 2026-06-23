@@ -14,9 +14,9 @@ describe("pricingResultToRefItem — листинг trade2 → моды с ти�
     } as any);
 
     expect(ref.mods).toEqual([
-      { shape: "#% to Chaos Resistance", tier: 2 },
-      { shape: "# to maximum Mana", tier: 3 },
-      { shape: "#% to all Elemental Resistances", tier: null },
+      { shape: "#% to Chaos Resistance", tier: 2, affix: "suffix" },
+      { shape: "# to maximum Mana", tier: 3, affix: "prefix" },
+      { shape: "#% to all Elemental Resistances", tier: null, affix: null },
     ]);
   });
 

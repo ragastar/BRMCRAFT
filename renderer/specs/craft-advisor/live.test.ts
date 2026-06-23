@@ -7,8 +7,9 @@ import { createPresets } from "@/web/price-check/filters/create-presets";
 import { createTradeRequest } from "@/web/price-check/trade/pathofexile-trade";
 import { buildReferenceOpts, fetchInBatches } from "@/web/craft-advisor/trade-reference";
 import { normalizeStatLine } from "@/web/craft-advisor/diff";
-import { buildTemplate, recommend, parseTier, type RefItem, type MyMod } from "@/web/craft-advisor/base-template";
+import { buildTemplate, recommend, parseTier, parseAffix, type RefItem, type MyMod } from "@/web/craft-advisor/base-template";
 import { describeItemMods } from "@/web/craft-advisor/item-mods";
+import { analyzeAffixSlots } from "@/web/craft-advisor/layer0";
 import { LIVE_ITEMS } from "./live-items";
 
 const realHttpFetch = globalThis.fetch.bind(globalThis);
@@ -74,12 +75,16 @@ describe.skipIf(!LIVE)("LIVE harness — шаблон базы по сравни
         const refs: RefItem[] = raw.map((r) => ({
           mods: [...(r.item?.explicitMods ?? []), ...(r.item?.implicitMods ?? [])].map((m: any) => {
             const desc = typeof m === "string" ? m : m?.description ?? "";
-            const tier = typeof m === "object" ? parseTier(m?.mods?.[0]?.tier) : null;
-            return { shape: normalizeStatLine(desc), tier };
+            const t = typeof m === "object" ? m?.mods?.[0]?.tier : null;
+            return { shape: normalizeStatLine(desc), tier: parseTier(t), affix: parseAffix(t) };
           }).filter((m: any) => m.shape),
         }));
         out.sampled = refs.length;
-        out.recs = recommend(buildTemplate(refs), myMods);
+        const a = analyzeAffixSlots(item);
+        out.recs = recommend(buildTemplate(refs), myMods, {
+          prefix: a.prefixes.free,
+          suffix: a.suffixes.free,
+        });
       } catch (e) { out.exception = (e as Error).message; }
       writeFileSync(OUT, JSON.stringify(report, null, 1));
     });

@@ -45,4 +45,23 @@ describe("describeItemMods — реальные строки свойств со
   it("на тексте без advanced-формата возвращает пустой список", () => {
     expect(describeItemMods("Rarity: Rare\nRider Bow\n")).toEqual([]);
   });
+
+  it("захватывает имплициты (affix: implicit)", () => {
+    const RING = `Item Class: Rings
+Rarity: Rare
+Dire Twirl
+Prismatic Ring
+--------
+{ Implicit Modifier — Elemental, Fire, Cold, Lightning, Resistance }
++8(7-10)% to all Elemental Resistances
+--------
+{ Suffix Modifier "of Exile" (Tier: 2) — Chaos, Resistance }
++23(20-23)% to Chaos Resistance
+`;
+    const mods = describeItemMods(RING);
+    const impl = mods.find((m) => m.affix === "implicit");
+    expect(impl).toBeTruthy();
+    expect(impl!.lines).toEqual(["+8% to all Elemental Resistances"]);
+    expect(mods.find((m) => m.affix === "suffix")!.name).toBe("of Exile");
+  });
 });

@@ -75,8 +75,11 @@
           <div :class="$style.craftLabel">Добавить (частые, у тебя нет):</div>
           <ul :class="$style.mods">
             <li v-for="(d, i) in recs.add.slice(0, 6)" :key="'a' + i" :class="$style.modLine">
-              <span :class="$style.fill">+</span> {{ d.shape }}
-              <span :class="$style.k">(носят {{ d.pct }}%{{ d.bestTier != null ? ", до T" + d.bestTier : "" }})</span>
+              <span :class="d.slotFree === false ? $style.improve : $style.fill">+</span> {{ d.shape }}
+              <span :class="$style.k">
+                (носят {{ d.pct }}%<template v-if="d.bestTier != null">, до T{{ d.bestTier }}</template><template v-if="d.affix">, {{ d.affix === "prefix" ? "преф" : "суф" }}</template>)
+                <template v-if="d.slotFree === false"> — нет слота, свап</template>
+              </span>
             </li>
             <li v-if="!recs.add.length" :class="$style.note">— нечего добавить из частого</li>
           </ul>
@@ -201,8 +204,11 @@ const refLoading = ref(false);
 const refError = ref<string | null>(null);
 
 const recs = computed(() =>
-  comparables.value.length
-    ? recommend(buildTemplate(comparables.value), myMods.value)
+  comparables.value.length && analysis.value
+    ? recommend(buildTemplate(comparables.value), myMods.value, {
+        prefix: analysis.value.prefixes.free,
+        suffix: analysis.value.suffixes.free,
+      })
     : null,
 );
 

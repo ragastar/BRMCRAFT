@@ -11,7 +11,7 @@ import { useLeagues } from "@/web/background/Leagues";
 import { AppConfig } from "@/web/Config";
 import type { PriceCheckWidget } from "@/web/overlay/interfaces";
 import { normalizeStatLine } from "./diff";
-import { parseTier, type RefItem } from "./base-template";
+import { parseTier, parseAffix, type RefItem } from "./base-template";
 
 // Слой 2 — эталонный поиск trade2. Чистый конвертер тестируется; сетевой
 // fetchReference переиспользует пайплайн EE2 (createPresets → createTradeRequest
@@ -78,7 +78,11 @@ export function pricingResultToRefItem(r: PricingResult): RefItem {
   const lines = [...(di?.explicitMods ?? []), ...(di?.implicitMods ?? [])];
   return {
     mods: lines
-      .map((l) => ({ shape: normalizeStatLine(l.text), tier: parseTier(l.tier) }))
+      .map((l) => ({
+        shape: normalizeStatLine(l.text),
+        tier: parseTier(l.tier),
+        affix: parseAffix(l.tier),
+      }))
       .filter((m) => m.shape.length > 0),
   };
 }

@@ -4,7 +4,7 @@
 // статов. Парсер EE2 для added-damage хранит только среднее, поэтому реальную
 // пару значений берём из текста. Детерминированно.
 
-export type AffixType = "prefix" | "suffix";
+export type AffixType = "prefix" | "suffix" | "implicit";
 
 export interface ItemMod {
   affix: AffixType;
@@ -14,7 +14,7 @@ export interface ItemMod {
 }
 
 const HEADER =
-  /^\{ (Prefix|Suffix) Modifier(?: "([^"]*)")?(?: \(Tier: (\d+)\))?/;
+  /^\{ (Prefix|Suffix|Implicit) Modifier(?: "([^"]*)")?(?: \(Tier: (\d+)\))?/;
 
 // "5(1-5)" -> "5", "+57(41-60)" -> "+57": вырезаем крафт-диапазон в скобках
 function cleanValues(line: string): string {
@@ -39,8 +39,8 @@ export function describeItemMods(rawText: string): ItemMod[] {
       mods.push(current);
       continue;
     }
-    if (line.startsWith("{")) {
-      // заголовок другого типа (implicit/rune/…) — закрываем текущий аффикс
+    if (line.startsWith("{") || /^-{3,}$/.test(line)) {
+      // заголовок другого блока или разделитель секции — закрываем текущий
       current = null;
       continue;
     }

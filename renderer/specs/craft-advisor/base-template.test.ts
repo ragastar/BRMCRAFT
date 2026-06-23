@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   parseTier,
+  parseAffix,
   buildTemplate,
   recommend,
   type RefItem,
@@ -15,6 +16,15 @@ describe("parseTier — номер тира из строки API", () => {
   it("пусто/мусор → null", () => {
     expect(parseTier("")).toBeNull();
     expect(parseTier(undefined)).toBeNull();
+  });
+});
+
+describe("parseAffix — преф/суфф из буквы тира API", () => {
+  it("P → prefix, S → suffix, иначе null", () => {
+    expect(parseAffix("P9")).toBe("prefix");
+    expect(parseAffix("S5")).toBe("suffix");
+    expect(parseAffix("9")).toBeNull();
+    expect(parseAffix(undefined)).toBeNull();
   });
 });
 
@@ -42,6 +52,15 @@ describe("buildTemplate — частота модов + лучший тир по
   it("отсортировано по частоте убыв.", () => {
     const t = buildTemplate(refs);
     expect(t.entries[0].shape).toBe("#% to Chaos Resistance");
+  });
+
+  it("affix по большинству голосов из листингов", () => {
+    const t = buildTemplate([
+      { mods: [{ shape: "X", tier: 2, affix: "suffix" }] },
+      { mods: [{ shape: "X", tier: 1, affix: "suffix" }] },
+      { mods: [{ shape: "X", tier: 3, affix: "prefix" }] },
+    ]);
+    expect(t.entries[0].affix).toBe("suffix"); // 2 suffix vs 1 prefix
   });
 
   it("дубль формы в одном листинге считается один раз", () => {
@@ -83,5 +102,17 @@ describe("recommend — рекомендации от шаблона", () => {
     const rar = r.template.find((x) => x.shape === "#% increased Rarity of Items found")!;
     expect(rar.mine).toBe(true);
     expect(rar.myTier).toBe(3);
+  });
+
+  it("add: с freeSlots помечает, есть ли слот под affix", () => {
+    const tpl = buildTemplate([
+      { mods: [{ shape: "# to maximum Mana", tier: 2, affix: "prefix" }] },
+      { mods: [{ shape: "#% to Fire Resistance", tier: 2, affix: "suffix" }] },
+    ]);
+    const r = recommend(tpl, [], { prefix: 1, suffix: 0 });
+    const mana = r.add.find((x) => x.shape === "# to maximum Mana")!;
+    const fire = r.add.find((x) => x.shape === "#% to Fire Resistance")!;
+    expect(mana.slotFree).toBe(true); // префикс свободен
+    expect(fire.slotFree).toBe(false); // суффиксов нет
   });
 });
