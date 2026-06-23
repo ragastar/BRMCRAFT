@@ -187,5 +187,40 @@ Electron + Vue + TS + Python, как в EE2. Не переписываем на 
 
 ---
 
+## 10. РЕАЛИЗОВАНО (as-built, июнь 2026)
+
+Сервис собран как форк EE2, виджет **Craft Advisor** (`renderer/src/web/craft-advisor/`), hotkey **Ctrl+E**. Весь код покрыт unit-тестами (TDD) и проверен **headless-харнессом на живой trade2-сессии** (`specs/craft-advisor/live.test.ts`, запуск `CRAFT_LIVE=1 npx vitest run …/live.test.ts`).
+
+### Поток (что реально работает)
+1. **Слой 0** (`layer0.ts`) — парсинг + слоты префиксов/суффиксов, modifiable.
+2. **Свойства** (`item-mods.ts`) — реальные строки со значениями из advanced-текста (включая имплициты), а не названия аффиксов.
+3. **Слой 2** (`trade-reference.ts` `fetchComparables`) — поиск **сравнимых** колец (count ≥2 твоих модов), выборка 40, извлечение модов+тиров+affix.
+4. **Слой 3 — шаблон базы** (`base-template.ts`) — частота модов + лучший достижимый тир + преф/суфф (affix из буквы тира API). `recommend` → keep / improve (твой мод ниже тира) / add (частые, которых нет) с физибилити по свободным слотам.
+5. **Слой 5 — метод** (`strategy-prompt.ts` + `strategy-client.ts`) — Claude **через локальный CLI на подписке** (НЕ OpenRouter — решение владельца, тестим локально) объясняет метод крафта (эссенция/экзальт/аннул/…) + приблизительную вероятность поверх детерминированных рекомендаций.
+6. **Хранилище** (`signature.ts` + `price-history.ts`) — персист истории цен (localStorage).
+
+### Ключевой разворот vs v2-план
+**Цена листинга в poe2-трейде — шум** (рынок бимодален: transmute-джанк + mirror-витрины, среднего нет; хорошие предметы слиты по номиналу). Поэтому value-by-price (diff/value-driver из плана) **отвергнут**; ядро — **частота модов + тиры** (price-independent). Текущую цену предмета отдаём штатному прайс-чеку EE2 (Ctrl+D).
+
+### trade2 GOTCHAs (выяснены и обойдены)
+- fetch ≤ 10 id/запрос (иначе «Invalid query») → батчинг.
+- search отдаёт макс 100 id; count-группа — только домены explicit/implicit/pseudo.
+- язык `query.type` должен совпадать с endpoint (`useEn` как в price-check), иначе «Invalid query».
+- Claude/подписка: НЕ `--bare` (ломает OAuth); `--system-prompt` + cwd=temp для изоляции.
+
+### Как запустить (локально, «для себя»)
+```sh
+cd renderer && npm i && npm run make-index-files && npm run dev   # vite :5173
+cd main && npm i && npm run dev                                   # electron overlay
+```
+Затем в PoE2: Ctrl+E на предмете → «Собрать шаблон» → рекомендации; «Метод от Claude» — опционально (нужен установленный/залогиненный Claude Code).
+Сборка инсталлятора: `cd renderer && npm run build`, `cd main && npm run build && npm run package`.
+
+### Статус
+Логика проверена end-to-end на живых данных. **Открыто:** живой smoke в самой игре (наведение на предмет в PoE2 — делает владелец); тюнинг выборки/состава count-группы.
+
+---
+
 *Источники кода: github.com/Kvan7/Exiled-Exchange-2 (MIT, прочитан локально) · pathofexile.com/developer · poeprices.info · craftofexile.com · PoE2DB*
 *Архитектурные утверждения v2 проверены по исходникам EE2 (commit на 22.06.2026).*
+*Раздел 10 (as-built) добавлен после реализации — отражает фактический сервис.*
