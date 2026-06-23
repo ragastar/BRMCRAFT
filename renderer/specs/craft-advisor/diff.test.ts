@@ -19,6 +19,21 @@ describe("normalizeStatLine — форма стата без чисел", () => 
       normalizeStatLine("Adds 9 to 13 Lightning Damage"),
     );
   });
+
+  it("вычищает GGG-разметку [Display|Ref] и [X]", () => {
+    expect(normalizeStatLine("+23% to [Resistances|Chaos Resistance]")).toBe(
+      "#% to Chaos Resistance",
+    );
+    expect(normalizeStatLine("+57 to [Accuracy|Accuracy] Rating")).toBe(
+      "# to Accuracy Rating",
+    );
+  });
+
+  it("мод из текста игры матчится с модом из API (после нормализации)", () => {
+    expect(normalizeStatLine("+23% to Chaos Resistance")).toBe(
+      normalizeStatLine("+15% to [Resistances|Chaos Resistance]"),
+    );
+  });
 });
 
 describe("diffReference — diff против эталонных листингов", () => {

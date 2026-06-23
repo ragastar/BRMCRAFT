@@ -28,3 +28,6 @@ docs/.vitepress/dist
 docs/.vitepress/cache
 
 *.bin
+
+# craft-advisor live harness output
+renderer/specs/craft-advisor/_live-out.json

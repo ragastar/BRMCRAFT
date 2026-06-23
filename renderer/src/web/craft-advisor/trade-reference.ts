@@ -54,6 +54,23 @@ export function buildReferenceOpts(
   };
 }
 
+// GGG trade2 fetch принимает максимум 10 id за запрос (иначе «Invalid query»).
+// Штатный EE2 тоже батчит по 10 (trade-api.ts).
+const FETCH_BATCH = 10;
+
+export async function fetchInBatches<T>(
+  ids: string[],
+  size: number,
+  fn: (chunk: string[]) => Promise<T[]>,
+): Promise<T[]> {
+  const out: T[] = [];
+  for (let i = 0; i < ids.length; i += size) {
+    const chunk = ids.slice(i, i + size);
+    out.push(...(await fn(chunk)));
+  }
+  return out;
+}
+
 export function pricingResultToReference(r: PricingResult): ReferenceListing {
   const di = r.displayItem;
   const lines = [
@@ -101,8 +118,9 @@ export async function fetchReference(
   const ids = list.result.slice(0, limit);
   if (ids.length === 0) return [];
 
-  const results = await requestResults(list.id, ids, {
-    accountName: config.accountName,
-  });
+  // Батчим по 10 — лимит GGG fetch (иначе «Invalid query»).
+  const results = await fetchInBatches(ids, FETCH_BATCH, (chunk) =>
+    requestResults(list.id, chunk, { accountName: config.accountName }),
+  );
   return results.map(pricingResultToReference);
 }

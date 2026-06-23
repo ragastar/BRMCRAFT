@@ -19,7 +19,11 @@ export interface DiffResult {
 }
 
 export function normalizeStatLine(line: string): string {
-  return line.replace(/[+-]?\d+(?:\.\d+)?/g, "#").trim();
+  return line
+    .replace(/\[[^\]|]*\|([^\]]+)\]/g, "$1") // [Ref|Display] → Display
+    .replace(/\[([^\]]+)\]/g, "$1") // [X] → X
+    .replace(/[+-]?\d+(?:\.\d+)?/g, "#")
+    .trim();
 }
 
 export function diffReference(
