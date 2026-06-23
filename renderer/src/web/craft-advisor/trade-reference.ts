@@ -6,6 +6,7 @@ import {
   type PricingResult,
 } from "@/web/price-check/trade/pathofexile-trade";
 import { createPresets } from "@/web/price-check/filters/create-presets";
+import { sampleSpread, isPlausiblePrice } from "./value-drivers";
 import { getTradeEndpoint } from "@/web/price-check/trade/common";
 import { useLeagues } from "@/web/background/Leagues";
 import { AppConfig } from "@/web/Config";
@@ -86,9 +87,7 @@ export function pricingResultToReference(r: PricingResult): ReferenceListing {
 
 export async function fetchReference(
   item: ParsedItem,
-  opts: { limit?: number } = {},
 ): Promise<ReferenceListing[]> {
-  const limit = opts.limit ?? 20;
   const league = useLeagues().selectedId.value;
   if (!league) throw new Error("Лига не выбрана в настройках оверлея.");
 
@@ -102,25 +101,50 @@ export async function fetchReference(
   const preset = presets.find((p) => p.id === active) ?? presets[0];
   if (!preset) throw new Error("Не удалось построить фильтры для предмета.");
 
-  // «Часть твоих свойств»: ищем по базе (без жёстких стат-фильтров), затем
-  // diff покажет общие/недостающие моды. Эталон по дорогому концу — тюним живьём.
-  const body = createTradeRequest(preset.filters, [], item);
+  // Поиск по базе без жёстких стат-фильтров. trade2 отдаёт максимум 100 ids,
+  // отсортированных по нормализованной цене, и обрезает выдачу. Поэтому:
+  //  - asc → дешёвый конец (реальные дешёвые предметы),
+  //  - desc → дорогой конец (но сверху скам «99999999 mirror» — отсеиваем).
+  // Объединяем дёшево→дорого: для value-driver нужен контраст цен.
+  const bodyAsc = createTradeRequest(preset.filters, [], item);
+  // trade2 принимает price:"desc" (тип EE2 сужен до "asc" — каст безопасен)
+  const bodyDesc = {
+    ...bodyAsc,
+    sort: { price: "desc" },
+  } as unknown as typeof bodyAsc;
 
-  let list;
+  let listAsc, listDesc;
   try {
-    list = await requestTradeResultList(body, league);
+    listAsc = await requestTradeResultList(bodyAsc, league);
+    listDesc = await requestTradeResultList(bodyDesc, league);
   } catch (e) {
-    // Диагностика: прикладываем точное тело и endpoint для воспроизведения
     throw new Error(
-      `${(e as Error).message}\n\n— endpoint: ${getTradeEndpoint()} · лига: ${league}\n— preset: ${preset.id}\n— query: ${JSON.stringify(body.query)}`,
+      `${(e as Error).message}\n\n— endpoint: ${getTradeEndpoint()} · лига: ${league}\n— preset: ${preset.id}\n— query: ${JSON.stringify(bodyAsc.query)}`,
     );
   }
-  const ids = list.result.slice(0, limit);
-  if (ids.length === 0) return [];
 
-  // Батчим по 10 — лимит GGG fetch (иначе «Invalid query»).
-  const results = await fetchInBatches(ids, FETCH_BATCH, (chunk) =>
-    requestResults(list.id, chunk, { accountName: config.accountName }),
+  const CHEAP_N = 10;
+  const EXP_FETCH = 20;
+  const EXP_KEEP = 10;
+
+  // дешёвый конец
+  const cheapIds = sampleSpread(listAsc.result, CHEAP_N);
+  const cheapResults = await fetchInBatches(cheapIds, FETCH_BATCH, (chunk) =>
+    requestResults(listAsc.id, chunk, { accountName: config.accountName }),
   );
-  return results.map(pricingResultToReference);
+
+  // дорогой конец (отсев скама по сумме)
+  const expIds = (listDesc.result ?? []).slice(0, EXP_FETCH);
+  const expResultsRaw = await fetchInBatches(expIds, FETCH_BATCH, (chunk) =>
+    requestResults(listDesc.id, chunk, { accountName: config.accountName }),
+  );
+  const expResults = expResultsRaw
+    .filter((r) => isPlausiblePrice(r.priceAmount, r.priceCurrency))
+    .slice(0, EXP_KEEP);
+
+  // дёшево→дорого: cheap (asc) + expensive (desc развёрнут: дешёвые→дорогие)
+  return [
+    ...cheapResults.map(pricingResultToReference),
+    ...expResults.reverse().map(pricingResultToReference),
+  ];
 }

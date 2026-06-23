@@ -6,7 +6,8 @@ import { parseClipboard } from "@/parser";
 import { createPresets } from "@/web/price-check/filters/create-presets";
 import { createTradeRequest } from "@/web/price-check/trade/pathofexile-trade";
 import { buildReferenceOpts, pricingResultToReference, fetchInBatches } from "@/web/craft-advisor/trade-reference";
-import { diffReference } from "@/web/craft-advisor/diff";
+import { normalizeStatLine } from "@/web/craft-advisor/diff";
+import { valueDrivers, sampleSpread, isPlausiblePrice } from "@/web/craft-advisor/value-drivers";
 import { describeItemMods } from "@/web/craft-advisor/item-mods";
 import { LIVE_ITEMS } from "./live-items";
 
@@ -59,46 +60,25 @@ describe.skipIf(!LIVE)("LIVE harness — весь конвейер на живо
         const preset = presets.find((p) => p.id === active) ?? presets[0];
         out.presetId = preset.id;
 
-        const body = createTradeRequest(preset.filters, [], item);
-        out.query = body.query;
-
-        // РЕАЛЬНЫЙ поиск через прокси (живая сессия)
-        const sres = await realHttpFetch(
-          `${PROXY}/api/trade2/search/${encodeURIComponent(report.league)}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Accept: "application/json" },
-            body: JSON.stringify(body),
-          },
-        );
-        const sjson: any = await sres.json();
-        if (sjson.error) {
-          out.searchError = sjson.error;
-          writeFileSync(OUT, JSON.stringify(report, null, 2));
-          expect(sjson.error, `GGG отверг запрос: ${JSON.stringify(sjson.error)}`).toBeUndefined();
-          return;
-        }
-        out.total = sjson.total ?? sjson.result?.length;
-        out.queryId = sjson.id;
-
-        // сырой API mod → строка (объект {description} ИЛИ строка)
         const modText = (m: any): string =>
           typeof m === "string" ? m : (m?.description ?? "");
 
-        const ids: string[] = (sjson.result ?? []).slice(0, 20);
-        if (ids.length) {
-          const results: any[] = await fetchInBatches(ids, 10, async (chunk) => {
-            const fres = await realHttpFetch(
-              `${PROXY}/api/trade2/fetch/${chunk.join(",")}?query=${sjson.id}`,
-            );
+        const search = async (sort: "asc" | "desc") => {
+          const body: any = createTradeRequest(preset.filters, [], item);
+          body.sort = { price: sort };
+          const res = await realHttpFetch(
+            `${PROXY}/api/trade2/search/${encodeURIComponent(report.league)}`,
+            { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(body) },
+          );
+          return { body, json: await res.json() };
+        };
+        const fetchRefs = async (qid: string, ids: string[]) =>
+          (await fetchInBatches(ids, 10, async (chunk) => {
+            const fres = await realHttpFetch(`${PROXY}/api/trade2/fetch/${chunk.join(",")}?query=${qid}`);
             const fjson: any = await fres.json();
-            if (fjson.error) {
-              out.fetchError = fjson.error;
-              return [];
-            }
+            if (fjson.error) { out.fetchError = fjson.error; return []; }
             return (fjson.result ?? []).filter(Boolean);
-          });
-          const refs = results.map((r: any) =>
+          })).map((r: any) =>
             pricingResultToReference({
               priceAmount: r.listing?.price?.amount,
               priceCurrency: r.listing?.price?.currency,
@@ -108,10 +88,29 @@ describe.skipIf(!LIVE)("LIVE harness — весь конвейер на живо
               },
             } as any),
           );
-          out.referenceCount = refs.length;
-          out.sampleRefs = refs.slice(0, 3);
-          out.diff = diffReference(out.mods, refs);
+
+        const asc = await search("asc");
+        out.query = asc.body.query;
+        if (asc.json.error) {
+          out.searchError = asc.json.error;
+          writeFileSync(OUT, JSON.stringify(report, null, 2));
+          expect(asc.json.error, `GGG отверг запрос: ${JSON.stringify(asc.json.error)}`).toBeUndefined();
+          return;
         }
+        const desc = await search("desc");
+
+        const cheapRefs = await fetchRefs(asc.json.id, sampleSpread(asc.json.result ?? [], 10));
+        const expRaw = await fetchRefs(desc.json.id, (desc.json.result ?? []).slice(0, 20));
+        const expRefs = expRaw.filter((r) => isPlausiblePrice(r.price, r.currency)).slice(0, 10);
+        const refs = [...cheapRefs, ...expRefs.reverse()];
+
+        out.referenceCount = refs.length;
+        out.cheapestRef = refs[0];
+        out.priciestRef = refs[refs.length - 1];
+        const myShapes = new Set<string>(
+          out.mods.flatMap((m: any) => m.lines).map(normalizeStatLine),
+        );
+        out.valueDrivers = valueDrivers(refs, myShapes);
       } catch (e) {
         out.exception = (e as Error).message;
       }

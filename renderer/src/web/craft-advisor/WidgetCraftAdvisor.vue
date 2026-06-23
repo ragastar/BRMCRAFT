@@ -60,20 +60,21 @@
         <!-- 4. Как скрафтить -->
         <template v-if="analysis.modifiable">
           <div :class="$style.subhead">Как скрафтить</div>
-          <template v-if="diff">
-            <div :class="$style.craftLabel">Есть у дорогих — оставить:</div>
+          <template v-if="vd">
+            <div :class="$style.craftLabel">Двигает цену, у тебя есть — оставить:</div>
             <ul :class="$style.mods">
-              <li v-for="(s, i) in diff.keep" :key="'k' + i" :class="$style.modLine">
-                ✓ {{ s }}
+              <li v-for="(d, i) in vd.keep" :key="'k' + i" :class="$style.modLine">
+                ✓ {{ d.shape }}
               </li>
-              <li v-if="!diff.keep.length" :class="$style.note">— ничего из твоего не совпало</li>
+              <li v-if="!vd.keep.length" :class="$style.note">— нет совпадений с драйверами цены</li>
             </ul>
-            <div :class="$style.craftLabel">Добавить (частые у дорогих, у тебя нет):</div>
+            <div :class="$style.craftLabel">Докрутить (двигает цену, у тебя нет):</div>
             <ul :class="$style.mods">
-              <li v-for="(m, i) in diff.missing.slice(0, 6)" :key="'m' + i" :class="$style.modLine">
-                + {{ m.shape }} <span :class="$style.k">({{ m.count }})</span>
+              <li v-for="(d, i) in vd.missing.slice(0, 6)" :key="'m' + i" :class="$style.modLine">
+                + {{ d.shape }}
+                <span :class="$style.k">(у {{ d.expCount }} дорогих / {{ d.cheapCount }} дешёвых)</span>
               </li>
-              <li v-if="!diff.missing.length" :class="$style.note">— нечего добавить</li>
+              <li v-if="!vd.missing.length" :class="$style.note">— явных драйверов цены не нашлось</li>
             </ul>
           </template>
           <ul v-else :class="$style.candidates">
@@ -144,7 +145,8 @@ import type { WidgetManager } from "../overlay/interfaces";
 import { analyzeAffixSlots } from "./layer0";
 import { narrowCandidates } from "./layer1";
 import { describeItemMods } from "./item-mods";
-import { diffReference, type ReferenceListing } from "./diff";
+import { normalizeStatLine, type ReferenceListing } from "./diff";
+import { valueDrivers } from "./value-drivers";
 import { fetchReference } from "./trade-reference";
 import { buildStrategyPrompt } from "./strategy-prompt";
 import { requestStrategy } from "./strategy-client";
@@ -182,18 +184,25 @@ const itemMods = computed(() =>
   item.value ? describeItemMods(item.value.rawText) : [],
 );
 
-// Слой 2–3: эталон из trade2 + diff
+// Слой 2–3: эталон из trade2 + value-drivers
 const references = ref<ReferenceListing[]>([]);
 const refLoading = ref(false);
 const refError = ref<string | null>(null);
 
-const diff = computed(() =>
+const myShapes = computed(
+  () =>
+    new Set(
+      itemMods.value.flatMap((m) => m.lines).map(normalizeStatLine),
+    ),
+);
+const vd = computed(() =>
   references.value.length
-    ? diffReference(itemMods.value, references.value)
+    ? valueDrivers(references.value, myShapes.value)
     : null,
 );
+// дорогой конец выборки (refs упорядочены дешёвые→дорогие)
 const topReferences = computed(() =>
-  [...references.value].sort((a, b) => b.price - a.price).slice(0, 5),
+  references.value.slice(-5).reverse(),
 );
 
 async function findReference() {
