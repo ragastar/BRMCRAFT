@@ -141,7 +141,6 @@ import { MainProcess } from "@/web/background/IPC";
 import { parseClipboard, ParsedItem } from "@/parser";
 import type { WidgetManager } from "../overlay/interfaces";
 import { analyzeAffixSlots } from "./layer0";
-import { narrowCandidates } from "./layer1";
 import { describeItemMods } from "./item-mods";
 import { normalizeStatLine } from "./diff";
 import {
@@ -183,10 +182,6 @@ const analysis = computed(() =>
 const itemMods = computed(() =>
   item.value ? describeItemMods(item.value.rawText) : [],
 );
-const candidates = computed(() =>
-  analysis.value ? narrowCandidates(analysis.value) : [],
-);
-
 // твои моды как {shape, tier, affix} — из текста игры (надёжно)
 const myMods = computed<MyMod[]>(() =>
   itemMods.value.flatMap((m) =>
@@ -232,14 +227,21 @@ const strategyLoading = ref(false);
 const strategyError = ref<string | null>(null);
 
 async function getStrategy() {
-  if (!analysis.value) return;
+  if (!analysis.value || !recs.value || !item.value) return;
   strategyLoading.value = true;
   strategyError.value = null;
   strategy.value = null;
   try {
     const prompt = buildStrategyPrompt({
-      analysis: analysis.value,
-      candidates: candidates.value,
+      base: item.value.info.refName,
+      itemLevel: item.value.itemLevel,
+      itemMods: itemMods.value,
+      improve: recs.value.improve,
+      add: recs.value.add,
+      freeSlots: {
+        prefix: analysis.value.prefixes.free,
+        suffix: analysis.value.suffixes.free,
+      },
     });
     strategy.value = await requestStrategy(prompt, {
       model: props.config.strategyModel,

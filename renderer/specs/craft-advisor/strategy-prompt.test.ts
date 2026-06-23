@@ -1,79 +1,56 @@
 import { describe, expect, it } from "vitest";
-import { ItemRarity } from "@/parser";
-import type { SlotAnalysis } from "@/web/craft-advisor/layer0";
-import type { Candidate } from "@/web/craft-advisor/layer1";
 import { buildStrategyPrompt } from "@/web/craft-advisor/strategy-prompt";
 
-const analysis: SlotAnalysis = {
-  rarity: ItemRarity.Rare,
-  base: "Rider Bow",
+const input = {
+  base: "Prismatic Ring",
   itemLevel: 80,
-  modifiable: true,
-  prefixes: {
-    occupied: [{ name: "Shocking", tier: 4, tags: ["Lightning"] }],
-    max: 3,
-    free: 2,
-  },
-  suffixes: {
-    occupied: [{ name: "of Radiance", tier: 1, tags: ["Attack"] }],
-    max: 3,
-    free: 2,
-  },
+  itemMods: [
+    { affix: "suffix" as const, tier: 2, lines: ["+23% to Chaos Resistance"] },
+    { affix: "implicit" as const, lines: ["+8% to all Elemental Resistances"] },
+  ],
+  improve: [
+    { shape: "Gain # Mana per enemy killed", myTier: 2, bestTier: 1, pct: 23 },
+  ],
+  add: [
+    { shape: "# to maximum Mana", pct: 15, bestTier: 5, affix: "prefix" as const, slotFree: true },
+    { shape: "#% to Fire Resistance", pct: 15, bestTier: 4, affix: "suffix" as const, slotFree: false },
+  ],
+  freeSlots: { prefix: 2, suffix: 0 },
 };
 
-const candidates: Candidate[] = [
-  { kind: "fill-slot", affix: "prefix", reason: "Свободный префикс", priority: 102 },
-  {
-    kind: "improve-mod",
-    affix: "prefix",
-    modName: "Shocking",
-    currentTier: 4,
-    reason: "«Shocking» на тире 4",
-    priority: 4,
-  },
-];
-
-describe("buildStrategyPrompt — промпт для Claude (Слой 5)", () => {
-  it("user-промпт содержит базу и iLvl", () => {
-    const { user } = buildStrategyPrompt({ analysis, candidates });
-    expect(user).toContain("Rider Bow");
+describe("buildStrategyPrompt — промпт метода крафта поверх рекомендаций", () => {
+  it("user содержит базу и iLvl", () => {
+    const { user } = buildStrategyPrompt(input);
+    expect(user).toContain("Prismatic Ring");
     expect(user).toContain("80");
   });
 
-  it("user-промпт перечисляет занятые моды с тирами", () => {
-    const { user } = buildStrategyPrompt({ analysis, candidates });
-    expect(user).toContain("Shocking");
-    expect(user).toContain("of Radiance");
+  it("user перечисляет improve (тир→тир) и add (с affix/слотом)", () => {
+    const { user } = buildStrategyPrompt(input);
+    expect(user).toContain("Gain # Mana per enemy killed");
+    expect(user).toMatch(/T2.*T1|T2 → T1/);
+    expect(user).toContain("# to maximum Mana");
+    expect(user).toMatch(/Fire Resistance/);
+    expect(user).toMatch(/своб|нет слота|свап/i); // статус слота
   });
 
-  it("user-промпт указывает свободные слоты", () => {
-    const { user } = buildStrategyPrompt({ analysis, candidates });
-    expect(user).toMatch(/префикс/i);
-    expect(user).toMatch(/суффикс/i);
+  it("user показывает свойства предмета", () => {
+    const { user } = buildStrategyPrompt(input);
+    expect(user).toContain("Chaos Resistance");
   });
 
-  it("user-промпт включает кандидатов", () => {
-    const { user } = buildStrategyPrompt({ analysis, candidates });
-    expect(user).toContain("Свободный префикс");
-  });
-
-  it("system-промпт требует русский, методы и приблизительные вероятности", () => {
-    const { system } = buildStrategyPrompt({ analysis, candidates });
+  it("system требует PoE2, метод, приблизительную вероятность, русский", () => {
+    const { system } = buildStrategyPrompt(input);
     expect(system.toLowerCase()).toContain("path of exile 2");
+    expect(system).toMatch(/метод|эссенц|экзальт|омен/i);
     expect(system).toMatch(/вероятност/i);
     expect(system).toMatch(/приблиз|примерн|оценочн/i);
   });
 
-  it("включает цену, если передана, и не падает без неё", () => {
-    const withPrice = buildStrategyPrompt({
-      analysis,
-      candidates,
-      price: { value: 5, currency: "divine" },
+  it("не падает без рекомендаций", () => {
+    const empty = buildStrategyPrompt({
+      base: "X", itemLevel: 1, itemMods: [], improve: [], add: [], freeSlots: { prefix: 0, suffix: 0 },
     });
-    expect(withPrice.user).toContain("5");
-    expect(withPrice.user.toLowerCase()).toContain("divine");
-
-    const without = buildStrategyPrompt({ analysis, candidates });
-    expect(without.user.length).toBeGreaterThan(0);
+    expect(empty.user.length).toBeGreaterThan(0);
   });
 });
