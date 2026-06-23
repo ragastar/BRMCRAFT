@@ -40,54 +40,49 @@
           </li>
         </ul>
 
-        <!-- 3. Лучшие предметы с частью твоих свойств (trade2) -->
-        <div :class="$style.subhead">Лучшие предметы с частью твоих свойств</div>
+        <!-- 3. Шаблон базы (что носят сравнимые кольца) -->
+        <div :class="$style.subhead">Шаблон базы</div>
         <button
           :class="$style.btn"
           :disabled="refLoading"
           @click="findReference"
         >
-          {{ refLoading ? "Ищу на trade2…" : "🔎 Найти эталон (trade2)" }}
+          {{ refLoading ? "Считаю по trade2…" : "🔎 Собрать шаблон (trade2)" }}
         </button>
         <div v-if="refError" :class="$style.error">{{ refError }}</div>
-        <ul v-if="topReferences.length" :class="$style.refs">
-          <li v-for="(r, i) in topReferences" :key="i" :class="$style.refItem">
-            <div :class="$style.refPrice">{{ r.price }} {{ r.currency }}</div>
-            <div :class="$style.refMods">{{ r.modLines.slice(0, 4).join(" · ") }}</div>
-          </li>
-        </ul>
+        <table v-if="recs" :class="$style.tpl">
+          <tr :class="$style.tplHead"><td>мод</td><td>носят</td><td>тир</td></tr>
+          <tr v-for="(e, i) in recs.template.slice(0, 8)" :key="i">
+            <td :class="e.mine ? $style.tplMine : ''">
+              <span v-if="e.mine" :class="$style.fill">✓</span> {{ e.shape }}
+            </td>
+            <td :class="$style.tplNum">{{ e.pct }}%</td>
+            <td :class="$style.tplNum">{{ e.bestTier != null ? "T" + e.bestTier : "—" }}</td>
+          </tr>
+        </table>
 
-        <!-- 4. Как скрафтить -->
-        <template v-if="analysis.modifiable">
-          <div :class="$style.subhead">Как скрафтить</div>
-          <template v-if="vd">
-            <div :class="$style.craftLabel">Двигает цену, у тебя есть — оставить:</div>
-            <ul :class="$style.mods">
-              <li v-for="(d, i) in vd.keep" :key="'k' + i" :class="$style.modLine">
-                ✓ {{ d.shape }}
-              </li>
-              <li v-if="!vd.keep.length" :class="$style.note">— нет совпадений с драйверами цены</li>
-            </ul>
-            <div :class="$style.craftLabel">Докрутить (двигает цену, у тебя нет):</div>
-            <ul :class="$style.mods">
-              <li v-for="(d, i) in vd.missing.slice(0, 6)" :key="'m' + i" :class="$style.modLine">
-                + {{ d.shape }}
-                <span :class="$style.k">(у {{ d.expCount }} дорогих / {{ d.cheapCount }} дешёвых)</span>
-              </li>
-              <li v-if="!vd.missing.length" :class="$style.note">— явных драйверов цены не нашлось</li>
-            </ul>
-          </template>
-          <ul v-else :class="$style.candidates">
-            <li v-for="(c, i) in candidates" :key="i" :class="$style.candidate">
-              <span :class="c.kind === 'fill-slot' ? $style.fill : $style.improve">
-                {{ c.kind === "fill-slot" ? "+" : "↑" }}
-              </span>
-              {{ c.reason }}
+        <!-- 4. Рекомендации -->
+        <template v-if="recs">
+          <div :class="$style.subhead">Рекомендации</div>
+          <div :class="$style.craftLabel">Поднять тир (у тебя ниже достижимого):</div>
+          <ul :class="$style.mods">
+            <li v-for="(d, i) in recs.improve" :key="'i' + i" :class="$style.modLine">
+              <span :class="$style.improve">↑</span> {{ d.shape }}: T{{ d.myTier }} → T{{ d.bestTier }}
+              <span :class="$style.k">(носят {{ d.pct }}%)</span>
             </li>
-            <li v-if="!candidates.length" :class="$style.note">
-              Найди эталон выше — посчитаю что добавить. Пока: предмет уже плотный.
-            </li>
+            <li v-if="!recs.improve.length" :class="$style.note">— твои моды уже на максимуме</li>
           </ul>
+          <div :class="$style.craftLabel">Добавить (частые, у тебя нет):</div>
+          <ul :class="$style.mods">
+            <li v-for="(d, i) in recs.add.slice(0, 6)" :key="'a' + i" :class="$style.modLine">
+              <span :class="$style.fill">+</span> {{ d.shape }}
+              <span :class="$style.k">(носят {{ d.pct }}%{{ d.bestTier != null ? ", до T" + d.bestTier : "" }})</span>
+            </li>
+            <li v-if="!recs.add.length" :class="$style.note">— нечего добавить из частого</li>
+          </ul>
+          <div :class="$style.note">
+            Слоты: префиксы {{ analysis.prefixes.free }} своб., суффиксы {{ analysis.suffixes.free }} своб.
+          </div>
           <button
             :class="$style.btn"
             :disabled="strategyLoading"
@@ -100,7 +95,7 @@
           </div>
           <div v-if="strategy" :class="$style.strategy">{{ strategy }}</div>
         </template>
-        <div v-else :class="$style.note">
+        <div v-if="!analysis.modifiable" :class="$style.note">
           Предмет не крафтится (не rare/magic).
         </div>
       </template>
@@ -145,9 +140,14 @@ import type { WidgetManager } from "../overlay/interfaces";
 import { analyzeAffixSlots } from "./layer0";
 import { narrowCandidates } from "./layer1";
 import { describeItemMods } from "./item-mods";
-import { normalizeStatLine, type ReferenceListing } from "./diff";
-import { valueDrivers } from "./value-drivers";
-import { fetchReference } from "./trade-reference";
+import { normalizeStatLine } from "./diff";
+import {
+  buildTemplate,
+  recommend,
+  type RefItem,
+  type MyMod,
+} from "./base-template";
+import { fetchComparables } from "./trade-reference";
 import { buildStrategyPrompt } from "./strategy-prompt";
 import { requestStrategy } from "./strategy-client";
 
@@ -177,42 +177,43 @@ props.config.wmWants = "hide";
 const analysis = computed(() =>
   item.value ? analyzeAffixSlots(item.value) : null,
 );
-const candidates = computed(() =>
-  analysis.value ? narrowCandidates(analysis.value) : [],
-);
 const itemMods = computed(() =>
   item.value ? describeItemMods(item.value.rawText) : [],
 );
+const candidates = computed(() =>
+  analysis.value ? narrowCandidates(analysis.value) : [],
+);
 
-// Слой 2–3: эталон из trade2 + value-drivers
-const references = ref<ReferenceListing[]>([]);
+// твои моды как {shape, tier, affix} — из текста игры (надёжно)
+const myMods = computed<MyMod[]>(() =>
+  itemMods.value.flatMap((m) =>
+    m.lines.map((l) => ({
+      shape: normalizeStatLine(l),
+      tier: m.tier ?? null,
+      affix: m.affix,
+    })),
+  ),
+);
+
+// Слой 2–3: шаблон базы из сравнимых колец (частота модов + лучший тир)
+const comparables = ref<RefItem[]>([]);
 const refLoading = ref(false);
 const refError = ref<string | null>(null);
 
-const myShapes = computed(
-  () =>
-    new Set(
-      itemMods.value.flatMap((m) => m.lines).map(normalizeStatLine),
-    ),
-);
-const vd = computed(() =>
-  references.value.length
-    ? valueDrivers(references.value, myShapes.value)
+const recs = computed(() =>
+  comparables.value.length
+    ? recommend(buildTemplate(comparables.value), myMods.value)
     : null,
-);
-// дорогой конец выборки (refs упорядочены дешёвые→дорогие)
-const topReferences = computed(() =>
-  references.value.slice(-5).reverse(),
 );
 
 async function findReference() {
   if (!item.value) return;
   refLoading.value = true;
   refError.value = null;
-  references.value = [];
+  comparables.value = [];
   try {
-    references.value = await fetchReference(item.value);
-    if (!references.value.length) refError.value = "Листингов не найдено.";
+    comparables.value = await fetchComparables(item.value);
+    if (!comparables.value.length) refError.value = "Сравнимых колец не найдено.";
   } catch (e) {
     refError.value = (e as Error).message;
   } finally {
@@ -249,7 +250,7 @@ MainProcess.onEvent("MAIN->CLIENT::item-text", (e) => {
   if (e.target !== "craft-advisor") return;
   strategy.value = null;
   strategyError.value = null;
-  references.value = [];
+  comparables.value = [];
   refError.value = null;
 });
 
@@ -343,6 +344,23 @@ const anchor = computed(() => {
 }
 .craftLabel {
   @apply text-xs text-gray-400 mt-2 mb-1;
+}
+.tpl {
+  @apply w-full mt-1 text-sm;
+  border-collapse: collapse;
+}
+.tplHead td {
+  @apply text-xs text-gray-500 pb-1;
+}
+.tpl td:nth-child(2),
+.tpl td:nth-child(3) {
+  @apply text-right whitespace-nowrap pl-2;
+}
+.tplNum {
+  @apply text-gray-300;
+}
+.tplMine {
+  @apply text-green-300;
 }
 .candidates {
   @apply flex flex-col gap-1;

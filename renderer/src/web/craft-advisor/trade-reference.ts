@@ -6,12 +6,12 @@ import {
   type PricingResult,
 } from "@/web/price-check/trade/pathofexile-trade";
 import { createPresets } from "@/web/price-check/filters/create-presets";
-import { sampleSpread, isPlausiblePrice } from "./value-drivers";
 import { getTradeEndpoint } from "@/web/price-check/trade/common";
 import { useLeagues } from "@/web/background/Leagues";
 import { AppConfig } from "@/web/Config";
 import type { PriceCheckWidget } from "@/web/overlay/interfaces";
-import type { ReferenceListing } from "./diff";
+import { normalizeStatLine } from "./diff";
+import { parseTier, type RefItem } from "./base-template";
 
 // Слой 2 — эталонный поиск trade2. Чистый конвертер тестируется; сетевой
 // fetchReference переиспользует пайплайн EE2 (createPresets → createTradeRequest
@@ -72,22 +72,22 @@ export async function fetchInBatches<T>(
   return out;
 }
 
-export function pricingResultToReference(r: PricingResult): ReferenceListing {
+// Листинг → моды с тирами (для шаблона базы). Цену игнорируем — в poe2 шум.
+export function pricingResultToRefItem(r: PricingResult): RefItem {
   const di = r.displayItem;
-  const lines = [
-    ...(di?.explicitMods ?? []),
-    ...(di?.implicitMods ?? []),
-  ].map((l) => l.text);
+  const lines = [...(di?.explicitMods ?? []), ...(di?.implicitMods ?? [])];
   return {
-    price: r.priceAmount,
-    currency: r.priceCurrency,
-    modLines: lines,
+    mods: lines
+      .map((l) => ({ shape: normalizeStatLine(l.text), tier: parseTier(l.tier) }))
+      .filter((m) => m.shape.length > 0),
   };
 }
 
-export async function fetchReference(
-  item: ParsedItem,
-): Promise<ReferenceListing[]> {
+const SAMPLE_SIZE = 40; // ~4 батча fetch
+
+// Сравнимые кольца: те, что имеют ≥2 ИЗ ТВОИХ модов (релевантнее, чем все
+// кольца базы). Цена не используется — берём выборку для частоты модов и тиров.
+export async function fetchComparables(item: ParsedItem): Promise<RefItem[]> {
   const league = useLeagues().selectedId.value;
   if (!league) throw new Error("Лига не выбрана в настройках оверлея.");
 
@@ -101,50 +101,36 @@ export async function fetchReference(
   const preset = presets.find((p) => p.id === active) ?? presets[0];
   if (!preset) throw new Error("Не удалось построить фильтры для предмета.");
 
-  // Поиск по базе без жёстких стат-фильтров. trade2 отдаёт максимум 100 ids,
-  // отсортированных по нормализованной цене, и обрезает выдачу. Поэтому:
-  //  - asc → дешёвый конец (реальные дешёвые предметы),
-  //  - desc → дорогой конец (но сверху скам «99999999 mirror» — отсеиваем).
-  // Объединяем дёшево→дорого: для value-driver нужен контраст цен.
-  const bodyAsc = createTradeRequest(preset.filters, [], item);
-  // trade2 принимает price:"desc" (тип EE2 сужен до "asc" — каст безопасен)
-  const bodyDesc = {
-    ...bodyAsc,
-    sort: { price: "desc" },
-  } as unknown as typeof bodyAsc;
+  const body = createTradeRequest(preset.filters, [], item);
+  // count-группа из твоих модов: «совпадает ≥2 из них». Берём только реальные
+  // моды (explicit/implicit/pseudo) — спец-домены типа item.* GGG отвергает.
+  const statIds = (preset.stats ?? [])
+    .map((s) => s.tradeId?.[0])
+    .filter((id): id is string => !!id && /^(explicit|implicit|pseudo)\./.test(id));
+  if (statIds.length >= 2) {
+    (body.query as { stats: unknown[] }).stats = [
+      {
+        type: "count",
+        value: { min: Math.min(2, statIds.length) },
+        filters: statIds.map((id) => ({ id })),
+      },
+    ];
+  }
 
-  let listAsc, listDesc;
+  let list;
   try {
-    listAsc = await requestTradeResultList(bodyAsc, league);
-    listDesc = await requestTradeResultList(bodyDesc, league);
+    list = await requestTradeResultList(body, league);
   } catch (e) {
     throw new Error(
-      `${(e as Error).message}\n\n— endpoint: ${getTradeEndpoint()} · лига: ${league}\n— preset: ${preset.id}\n— query: ${JSON.stringify(bodyAsc.query)}`,
+      `${(e as Error).message}\n\n— endpoint: ${getTradeEndpoint()} · лига: ${league}\n— preset: ${preset.id}\n— query: ${JSON.stringify(body.query)}`,
     );
   }
 
-  const CHEAP_N = 10;
-  const EXP_FETCH = 20;
-  const EXP_KEEP = 10;
+  const ids = (list.result ?? []).slice(0, SAMPLE_SIZE);
+  if (ids.length === 0) return [];
 
-  // дешёвый конец
-  const cheapIds = sampleSpread(listAsc.result, CHEAP_N);
-  const cheapResults = await fetchInBatches(cheapIds, FETCH_BATCH, (chunk) =>
-    requestResults(listAsc.id, chunk, { accountName: config.accountName }),
+  const results = await fetchInBatches(ids, FETCH_BATCH, (chunk) =>
+    requestResults(list.id, chunk, { accountName: config.accountName }),
   );
-
-  // дорогой конец (отсев скама по сумме)
-  const expIds = (listDesc.result ?? []).slice(0, EXP_FETCH);
-  const expResultsRaw = await fetchInBatches(expIds, FETCH_BATCH, (chunk) =>
-    requestResults(listDesc.id, chunk, { accountName: config.accountName }),
-  );
-  const expResults = expResultsRaw
-    .filter((r) => isPlausiblePrice(r.priceAmount, r.priceCurrency))
-    .slice(0, EXP_KEEP);
-
-  // дёшево→дорого: cheap (asc) + expensive (desc развёрнут: дешёвые→дорогие)
-  return [
-    ...cheapResults.map(pricingResultToReference),
-    ...expResults.reverse().map(pricingResultToReference),
-  ];
+  return results.map(pricingResultToRefItem);
 }

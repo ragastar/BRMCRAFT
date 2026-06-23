@@ -1,34 +1,26 @@
 import { describe, expect, it } from "vitest";
-import { pricingResultToReference } from "@/web/craft-advisor/trade-reference";
+import { pricingResultToRefItem } from "@/web/craft-advisor/trade-reference";
 
-describe("pricingResultToReference — листинг trade2 → эталон для diff", () => {
-  it("берёт цену и строки explicit/implicit модов", () => {
-    const ref = pricingResultToReference({
-      priceAmount: 50,
-      priceCurrency: "divine",
+describe("pricingResultToRefItem — листинг trade2 → моды с тирами (для шаблона)", () => {
+  it("берёт explicit/implicit моды, нормализует форму и тир", () => {
+    const ref = pricingResultToRefItem({
       displayItem: {
         explicitMods: [
-          { text: "Adds 40 to 90 Lightning Damage", color: 0 },
-          { text: "+80 to maximum Life", color: 0 },
+          { text: "+50% to [Resistances|Chaos Resistance]", tier: "S2" },
+          { text: "+80 to maximum Mana", tier: "P3" },
         ],
-        implicitMods: [{ text: "+12% to Lightning Resistance", color: 0 }],
+        implicitMods: [{ text: "+12% to all Elemental Resistances", tier: "" }],
       },
     } as any);
 
-    expect(ref.price).toBe(50);
-    expect(ref.currency).toBe("divine");
-    expect(ref.modLines).toEqual([
-      "Adds 40 to 90 Lightning Damage",
-      "+80 to maximum Life",
-      "+12% to Lightning Resistance",
+    expect(ref.mods).toEqual([
+      { shape: "#% to Chaos Resistance", tier: 2 },
+      { shape: "# to maximum Mana", tier: 3 },
+      { shape: "#% to all Elemental Resistances", tier: null },
     ]);
   });
 
-  it("без displayItem/модов — пустые строки", () => {
-    const ref = pricingResultToReference({
-      priceAmount: 1,
-      priceCurrency: "exalted",
-    } as any);
-    expect(ref.modLines).toEqual([]);
+  it("без displayItem — пустые моды", () => {
+    expect(pricingResultToRefItem({} as any).mods).toEqual([]);
   });
 });
