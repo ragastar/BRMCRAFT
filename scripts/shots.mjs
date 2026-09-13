@@ -41,6 +41,10 @@ for (const s of sizes) {
   });
   await page.goto(base, { waitUntil: "networkidle" });
   await page.evaluate(() => document.fonts.ready);
+  // SHOT_STATE=record|half|text|cold|letter|open — снять устройство в нужном состоянии глаза
+  if (process.env.SHOT_STATE) {
+    await page.evaluate((st) => window.__device?.setState(st), process.env.SHOT_STATE);
+  }
   await page.waitForTimeout(2200);
   await page.screenshot({ path: `${out}/${s.name}-top.png` });
   if (onlyTop) {

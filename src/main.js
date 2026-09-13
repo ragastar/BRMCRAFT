@@ -1,5 +1,6 @@
 import "./styles.css";
 import Lenis from "lenis";
+import { createDevice } from "./device.js";
 
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -13,3 +14,9 @@ if (!reducedMotion) {
   };
   requestAnimationFrame(raf);
 }
+
+// Устройство в сцене. Единственная анимация «сама по себе» — глаз
+// открывается при загрузке.
+const device = createDevice(document.getElementById("device"), { reducedMotion });
+window.__device = device;
+setTimeout(() => device.setState("open", { duration: 1.4, ease: "power3.out" }), 250);
