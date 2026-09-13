@@ -11,7 +11,7 @@ import { EYE_W, EYE_H, EYE_STATES, createEyeParams, drawEye } from "./eye.js";
 const W = 6;
 const H = 2.8;
 const D = 0.9;
-const R = 0.42;
+const R = 0.44; // почти полностью скруглённые кромки — «таблетка»
 const SCREEN_W = 4.5;
 const SCREEN_H = 1.5; // миндаль ≈ 3:1
 
@@ -63,9 +63,16 @@ export function createDevice(canvas, { reducedMotion = false } = {}) {
 
   const camera = new THREE.PerspectiveCamera(28, 1, 0.1, 100);
 
+  // Это кулон: пластина висит на шнуре за ушко. Точка подвеса — верх ушка;
+  // покачивание идёт вокруг неё, а не вокруг центра пластины.
+  const PIVOT_Y = H / 2 + 0.44;
   const rig = new THREE.Group(); // поворот по скроллу
-  const body = new THREE.Group(); // лёгкое покачивание
-  rig.add(body);
+  const hang = new THREE.Group(); // качание на шнуре (ось — точка подвеса)
+  const body = new THREE.Group(); // сама пластина с экраном
+  hang.position.y = PIVOT_Y;
+  body.position.y = -PIVOT_Y;
+  hang.add(body);
+  rig.add(hang);
   scene.add(rig);
 
   // --- корпус ---
@@ -157,6 +164,30 @@ export function createDevice(canvas, { reducedMotion = false } = {}) {
     body.add(hole);
   }
 
+  // --- подвес: ушко на верхней кромке и шнур двумя нитями вверх ---
+  const bailMetal = new THREE.MeshStandardMaterial({
+    color: 0x2a2c32,
+    metalness: 0.9,
+    roughness: 0.3,
+    envMapIntensity: 1.2,
+  });
+  const bail = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.05, 12, 40), bailMetal);
+  bail.position.set(0, H / 2 + 0.22, 0);
+  body.add(bail);
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.1, 0.16, 16), bailMetal);
+  neck.position.set(0, H / 2 + 0.03, 0);
+  body.add(neck);
+
+  const cordMat = new THREE.MeshStandardMaterial({ color: 0x1a1b20, roughness: 0.8, metalness: 0.15 });
+  const CORD_LEN = 8;
+  for (const dir of [-1, 1]) {
+    const ang = dir * 0.26; // ≈ 15° от вертикали
+    const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.032, CORD_LEN, 10), cordMat);
+    cord.position.set(Math.sin(ang) * (CORD_LEN / 2), (Math.cos(ang) * CORD_LEN) / 2, 0);
+    cord.rotation.z = -ang;
+    hang.add(cord); // шнур выходит из точки подвеса (начало координат hang)
+  }
+
   // --- свет ---
   const key = new THREE.DirectionalLight(0xffffff, 2.2);
   key.position.set(-3, 5, 6);
@@ -177,10 +208,10 @@ export function createDevice(canvas, { reducedMotion = false } = {}) {
     camera.aspect = w / h;
     const vfov = (camera.fov * Math.PI) / 180;
     const hfov = 2 * Math.atan(Math.tan(vfov / 2) * camera.aspect);
-    const distH = (H * 2.1) / 2 / Math.tan(vfov / 2);
+    const distH = (H * 2.3) / 2 / Math.tan(vfov / 2);
     const distW = (W * 1.25) / 2 / Math.tan(hfov / 2);
-    camera.position.set(0, 0.25, Math.max(distH, distW));
-    camera.lookAt(0, 0, 0);
+    camera.position.set(0, 0.6, Math.max(distH, distW));
+    camera.lookAt(0, 0.28, 0); // пластина чуть ниже центра — сверху место шнуру
     camera.updateProjectionMatrix();
   }
   resize();
@@ -257,9 +288,10 @@ export function createDevice(canvas, { reducedMotion = false } = {}) {
     rig.rotation.y += (targetYaw - rig.rotation.y) * 0.08;
     rig.rotation.x += (targetPitch - rig.rotation.x) * 0.08;
     if (!reducedMotion) {
-      body.position.y = Math.sin(t * 0.9) * 0.05;
-      body.rotation.z = Math.sin(t * 0.6) * 0.012;
-      body.rotation.x = Math.sin(t * 0.7) * 0.01;
+      // кулон едва качается на шнуре и чуть поворачивается на нём
+      hang.rotation.z = Math.sin(t * 0.65) * 0.03;
+      hang.rotation.y = Math.sin(t * 0.45) * 0.05;
+      hang.rotation.x = Math.sin(t * 0.8) * 0.01;
     }
     renderer.render(scene, camera);
   }
