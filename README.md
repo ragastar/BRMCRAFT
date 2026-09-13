@@ -1,50 +1,54 @@
-# ![Perfect Jewelers Orb](./renderer/public/images/jeweler.png) Exiled Exchange 2
+# omilevin — Craft Advisor для Path of Exile 2
 
-[![GitHub Downloads (specific asset, latest release)](https://img.shields.io/github/downloads/kvan7/exiled-exchange-2/latest/Exiled-Exchange-2-Setup-0.15.8.exe?style=plastic&link=https%3A%2F%2Ftooomm.github.io%2Fgithub-release-stats%2F%3Fusername%3Dkvan7%26repository%3DExiled-Exchange-2)](https://tooomm.github.io/github-release-stats/?username=kvan7&repository=Exiled-Exchange-2)
-[![GitHub Tag](https://img.shields.io/github/v/tag/kvan7/exiled-exchange-2?style=plastic&label=latest%20version)](https://github.com/Kvan7/Exiled-Exchange-2/releases/latest)
-[![GitHub commits since latest release (branch)](https://img.shields.io/github/commits-since/kvan7/exiled-exchange-2/latest/dev?style=plastic)](https://github.com/Kvan7/Exiled-Exchange-2/commits/dev/)
-[![Translation status](https://translate.codeberg.org/widget/exiled-exchange-2/svg-badge.svg)](https://translate.codeberg.org/engage/exiled-exchange-2/)
+Оверлей для PoE 2, который на наведённый предмет отвечает не «сколько стоит»,
+а **что докрутить, каким методом и с какой вероятностью**, чтобы предмет стоил
+кратно дороже.
 
-Path of Exile 2 overlay program for price checking items, among many other loved features.
+Форк [Exiled Exchange 2](https://github.com/Kvan7/Exiled-Exchange-2) (MIT), который
+в свою очередь форк [Awakened PoE Trade](https://github.com/SnosMe/awakened-poe-trade).
+Штатный прайс-чек EE2 сохранён как есть, поверх него добавлен виджет
+**Craft Advisor** (хоткей **Ctrl + E**).
 
-Fork of [Awakened PoE Trade](https://github.com/SnosMe/awakened-poe-trade).
+## Как это работает
 
-The ONLY official download sites are <https://kvan7.github.io/Exiled-Exchange-2/download> or <https://github.com/Kvan7/Exiled-Exchange-2/releases>, any other locations are not official and may be malicious.
+1. **Слой 0** — база, iLvl, занятые и свободные слоты префиксов/суффиксов.
+2. **Слой 2** — сравнимые предметы из trade2 (не меньше двух общих модов, выборка 40).
+3. **Слой 3** — «шаблон базы»: частота модов + лучший достижимый тир →
+   рекомендации keep / improve / add с учётом свободных слотов.
+4. **Слой 5** — Claude через локальный `claude` CLI на подписке объясняет метод
+   крафта (эссенция, экзальт, аннул, …) и приблизительную вероятность.
 
-## Moving from POE1/Awakened PoE Trade
+Цена листингов намеренно не используется: рынок poe2 бимодален (transmute-джанк
+и mirror-витрины), среднего нет. Текущую цену показывает штатный прайс-чек EE2
+(Ctrl + D). Подробности — в PRD, раздел 10.
 
-1. Download latest release from [releases](https://github.com/Kvan7/exiled-exchange-2/releases)
-2. Run installer
-3. Run Exiled Exchange 2
-4. Launch PoE2 to generate correct files
-5. Quit PoE2 and EE2 after seeing the banner popup that EE2 loaded
-6. Copy `apt-data` from `%APPDATA%\awakened-poe-trade` to `%APPDATA%\exiled-exchange-2` to copy your previous settings
-  - Resulting directory structure should look like this:
-  - `%APPDATA%\exiled-exchange-2\apt-data\`
-    - `config.json`
-7. Edit `config.json` and change the value of "windowTitle": "Path of Exile" to instead be "Path of Exile 2", otherwise it will open only for poe1
-8. Start Exiled Exchange 2 and PoE2
+## Запуск (dev)
 
-## FAQ
+```sh
+cd renderer && npm i && npm run make-index-files && npm run dev   # vite :5173
+cd main && npm i && npm run dev                                   # electron overlay
+```
 
-<https://kvan7.github.io/Exiled-Exchange-2/faq>
+На Windows `start-craft-advisor.bat` поднимает оба процесса одним кликом.
+Для кнопки «Подробнее от Claude» нужен установленный и залогиненный Claude Code.
 
-## Tool showcase
+Сборка инсталлятора: `cd renderer && npm run build`, затем
+`cd main && npm run build && npm run package`.
 
-| Gem                                                | Rare                                                 | Unique                                                   | Currency                                                     |
-| -------------------------------------------------- | ---------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------ |
-| ![Gem Check](./docs/reference-images/GemCheck.png) | ![Rare Check](./docs/reference-images/RareCheck.png) | ![Unique Check](./docs/reference-images/UniqueCheck.png) | ![Currency Check](./docs/reference-images/CurrencyCheck.png) |
+## Тесты
 
-### Development
+```sh
+cd renderer && npx vitest run specs/craft-advisor/
+CRAFT_LIVE=1 npx vitest run specs/craft-advisor/live.test.ts   # живая trade2-сессия
+```
 
-See [DEVELOPING.md](./DEVELOPING.md)
+## Документация
 
-### Acknowledgments
+- [docs/craft-advisor.md](./docs/craft-advisor.md) — руководство по виджету
+- [PRD-craft-advisor-v2.md](./PRD-craft-advisor-v2.md) — замысел и as-built (раздел 10)
+- [DEVELOPING.md](./DEVELOPING.md) — устройство, сборка, релиз
 
-- [awakened-poe-trade](https://github.com/SnosMe/awakened-poe-trade)
-- [libuiohook](https://github.com/kwhat/libuiohook)
-- [RePoE](https://github.com/brather1ng/RePoE)
-- [poeprices.info](https://www.poeprices.info/)
-- [poe.ninja](https://poe.ninja/)
+## Лицензия
 
-![graph](https://i.imgur.com/MATqhv7.png)
+MIT, см. [LICENSE](./LICENSE). Копирайт-нотисы Awakened PoE Trade и
+Exiled Exchange 2 сохранены.

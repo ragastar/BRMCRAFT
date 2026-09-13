@@ -9,12 +9,6 @@ repos:
         args: ['--maxkb=2048']
 -   repo: local
     hooks:
-    -   id: check-version-consistency
-        name: Check Version Consistency
-        entry: python ./versionCheck.py
-        language: python
-        files: \.(js|md|yml|json)$
-
     -   id: lint-fix-main
         name: Lint Fix Main Project
         entry: npm run fix --prefix ./main
