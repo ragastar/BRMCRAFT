@@ -1,19 +1,21 @@
-// Устройство «Левин» в Three.js: скруглённая пластина 60×28×9 мм из матового
-// чёрного металла, миндалевидный экран с глазом, одна кнопка на торце.
-// 1 единица сцены = 10 мм.
+// Устройство «Левин» в Three.js: кулон в форме глаза — миндалевидный корпус
+// 60×28×9 мм из матового чёрного металла со скруглёнными кромками, внутри
+// экран того же контура с радужкой и зрачком, одна кнопка на остром торце,
+// ушко и шнур. 1 единица сцены = 10 мм.
 
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+import { mergeVertices } from "three/addons/utils/BufferGeometryUtils.js";
 import gsap from "gsap";
 import { EYE_W, EYE_H, EYE_STATES, createEyeParams, drawEye } from "./eye.js";
 
 const W = 6;
 const H = 2.8;
 const D = 0.9;
-const R = 0.44; // почти полностью скруглённые кромки — «таблетка»
-const SCREEN_W = 4.5;
-const SCREEN_H = 1.5; // миндаль ≈ 3:1
+const EDGE = 0.32; // радиус скругления кромок корпуса
+const SCREEN_W = 4.7;
+const SCREEN_H = 1.57; // экран-миндаль ≈ 3:1, повторяет контур корпуса
 
 // Базовая поза и диапазон поворота по скроллу (≈ 26°).
 const YAW0 = -0.22;
@@ -27,6 +29,28 @@ function almondShape(w, h) {
   s.quadraticCurveTo(0, h * 0.96, w / 2, 0);
   s.quadraticCurveTo(0, -h * 0.96, -w / 2, 0);
   return s;
+}
+
+// Корпус: миндаль, выдавленный на толщину D, кромки скруглены фаской-четвертью.
+// Фаска расширяет контур на EDGE с каждой стороны, поэтому исходная форма меньше.
+function almondBody() {
+  const depth = D - 2 * EDGE;
+  const shape = almondShape(W - 2 * EDGE, (H / 2 - EDGE) / 0.48);
+  const geo = new THREE.ExtrudeGeometry(shape, {
+    depth,
+    bevelEnabled: true,
+    bevelThickness: EDGE,
+    bevelSize: EDGE,
+    bevelOffset: 0,
+    bevelSegments: 10,
+    curveSegments: 72,
+  });
+  geo.translate(0, 0, -depth / 2);
+  geo.deleteAttribute("normal");
+  geo.deleteAttribute("uv");
+  const smooth = mergeVertices(geo);
+  smooth.computeVertexNormals();
+  return smooth;
 }
 
 function makeGlowTexture() {
@@ -82,12 +106,12 @@ export function createDevice(canvas, { reducedMotion = false } = {}) {
     roughness: 0.5,
     envMapIntensity: 1.0,
   });
-  const plate = new THREE.Mesh(new RoundedBoxGeometry(W, H, D, 6, R), metal);
+  const plate = new THREE.Mesh(almondBody(), metal);
   body.add(plate);
 
   // --- экран: глянцевая рамка + сам экран с текстурой глаза ---
   const bezel = new THREE.Mesh(
-    new THREE.ShapeGeometry(almondShape(SCREEN_W * 1.04, SCREEN_H * 1.07), 64),
+    new THREE.ShapeGeometry(almondShape(SCREEN_W * 1.03, SCREEN_H * 1.07), 64),
     new THREE.MeshPhysicalMaterial({
       color: 0x050507,
       metalness: 0.1,
@@ -116,7 +140,7 @@ export function createDevice(canvas, { reducedMotion = false } = {}) {
 
   // стекло поверх экрана: только блики окружения (аддитивно)
   const glass = new THREE.Mesh(
-    new THREE.ShapeGeometry(almondShape(SCREEN_W * 1.04, SCREEN_H * 1.07), 64),
+    new THREE.ShapeGeometry(almondShape(SCREEN_W * 1.03, SCREEN_H * 1.07), 64),
     new THREE.MeshPhysicalMaterial({
       color: 0x000000,
       metalness: 0,
@@ -148,19 +172,23 @@ export function createDevice(canvas, { reducedMotion = false } = {}) {
   glow.position.z = D / 2 + 0.05;
   body.add(glow);
 
-  // --- кнопка на правом торце ---
+  // --- кнопка на правом (остром) торце ---
   const button = new THREE.Mesh(
-    new RoundedBoxGeometry(0.16, 0.72, 0.34, 3, 0.07),
+    new RoundedBoxGeometry(0.18, 0.44, 0.3, 3, 0.07),
     new THREE.MeshStandardMaterial({ color: 0x1b1d22, metalness: 0.85, roughness: 0.3 }),
   );
-  button.position.set(W / 2 + 0.03, 0.5, 0);
+  button.position.set(W / 2 - 0.02, 0, 0);
   body.add(button);
 
-  // --- микрофон: три отверстия внизу слева лицевой стороны ---
+  // --- микрофон: три отверстия вдоль нижней левой кромки лицевой стороны ---
   const holeMat = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 1, metalness: 0 });
-  for (let i = 0; i < 3; i++) {
-    const hole = new THREE.Mesh(new THREE.CircleGeometry(0.035, 16), holeMat);
-    hole.position.set(-W / 2 + 0.62 + i * 0.16, -H / 2 + 0.36, D / 2 + 0.002);
+  for (const [x, y] of [
+    [-1.92, -0.38],
+    [-1.74, -0.46],
+    [-1.56, -0.53],
+  ]) {
+    const hole = new THREE.Mesh(new THREE.CircleGeometry(0.032, 16), holeMat);
+    hole.position.set(x, y, D / 2 + 0.002);
     body.add(hole);
   }
 
