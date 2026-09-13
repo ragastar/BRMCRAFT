@@ -759,7 +759,11 @@ function getConfigForHost(): HostConfig {
   if (craftAdvisor.hotkey) {
     actions.push({
       shortcut: craftAdvisor.hotkey,
-      action: { type: "copy-item", target: "craft-advisor", focusOverlay: true },
+      action: {
+        type: "copy-item",
+        target: "craft-advisor",
+        focusOverlay: true,
+      },
     });
   }
   const library = AppConfig("library") as LibraryWidget;

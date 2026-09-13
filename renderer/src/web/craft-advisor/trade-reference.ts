@@ -110,7 +110,9 @@ export async function fetchComparables(item: ParsedItem): Promise<RefItem[]> {
   // моды (explicit/implicit/pseudo) — спец-домены типа item.* GGG отвергает.
   const statIds = (preset.stats ?? [])
     .map((s) => s.tradeId?.[0])
-    .filter((id): id is string => !!id && /^(explicit|implicit|pseudo)\./.test(id));
+    .filter(
+      (id): id is string => !!id && /^(explicit|implicit|pseudo)\./.test(id),
+    );
   if (statIds.length >= 2) {
     (body.query as { stats: unknown[] }).stats = [
       {

@@ -23,8 +23,16 @@ describe("describeItemMods — реальные строки свойств со
   it("извлекает все аффиксы с типом, тиром и именем", () => {
     const mods = describeItemMods(RAW);
     expect(mods.length).toBe(4);
-    expect(mods[0]).toMatchObject({ affix: "prefix", tier: 4, name: "Shocking" });
-    expect(mods[3]).toMatchObject({ affix: "suffix", tier: 1, name: "of Radiance" });
+    expect(mods[0]).toMatchObject({
+      affix: "prefix",
+      tier: 4,
+      name: "Shocking",
+    });
+    expect(mods[3]).toMatchObject({
+      affix: "suffix",
+      tier: 1,
+      name: "of Radiance",
+    });
   });
 
   it("показывает реальные значения, а не названия (диапазоны крафта вырезаны)", () => {

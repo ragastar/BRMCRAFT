@@ -15,24 +15,26 @@
           {{ item.info.name || item.info.refName }}
         </div>
         <div :class="$style.base">
-          {{ item.info.refName }} · iLvl {{ item.itemLevel ?? "—" }} ·
-          П {{ analysis.prefixes.occupied.length }}/{{ analysis.prefixes.max }} ·
+          {{ item.info.refName }} · iLvl {{ item.itemLevel ?? "—" }} · П
+          {{ analysis.prefixes.occupied.length }}/{{ analysis.prefixes.max }} ·
           С {{ analysis.suffixes.occupied.length }}/{{ analysis.suffixes.max }}
         </div>
 
         <!-- 2. Свойства (реальные значения, не названия) -->
         <div :class="$style.subhead">Свойства</div>
         <ul :class="$style.mods">
-          <li
-            v-for="(m, i) in itemMods"
-            :key="i"
-            :class="$style.mod"
-          >
+          <li v-for="(m, i) in itemMods" :key="i" :class="$style.mod">
             <span :class="m.affix === 'prefix' ? $style.pfx : $style.sfx">
-              {{ m.affix === "prefix" ? "P" : "S" }}<template v-if="m.tier">·T{{ m.tier }}</template>
+              {{ m.affix === "prefix" ? "P" : "S"
+              }}<template v-if="m.tier">·T{{ m.tier }}</template>
             </span>
             <span :class="$style.modLines">
-              <span v-for="(l, j) in m.lines" :key="j" :class="$style.modLine">{{ l }}</span>
+              <span
+                v-for="(l, j) in m.lines"
+                :key="j"
+                :class="$style.modLine"
+                >{{ l }}</span
+              >
             </span>
           </li>
           <li v-if="!itemMods.length" :class="$style.note">
@@ -51,47 +53,84 @@
         </button>
         <div v-if="refError" :class="$style.error">{{ refError }}</div>
         <table v-if="recs" :class="$style.tpl">
-          <tr :class="$style.tplHead"><td>мод</td><td>носят</td><td>тир</td></tr>
+          <tr :class="$style.tplHead">
+            <td>мод</td>
+            <td>носят</td>
+            <td>тир</td>
+          </tr>
           <tr v-for="(e, i) in recs.template.slice(0, 8)" :key="i">
             <td :class="e.mine ? $style.tplMine : ''">
               <span v-if="e.mine" :class="$style.fill">✓</span> {{ e.shape }}
             </td>
             <td :class="$style.tplNum">{{ e.pct }}%</td>
-            <td :class="$style.tplNum">{{ e.bestTier != null ? "T" + e.bestTier : "—" }}</td>
+            <td :class="$style.tplNum">
+              {{ e.bestTier != null ? "T" + e.bestTier : "—" }}
+            </td>
           </tr>
         </table>
 
         <!-- 4. Рекомендации -->
         <template v-if="recs">
           <div :class="$style.subhead">Рекомендации</div>
-          <div :class="$style.craftLabel">Поднять тир (у тебя ниже достижимого):</div>
+          <div :class="$style.craftLabel">
+            Поднять тир (у тебя ниже достижимого):
+          </div>
           <ul :class="$style.mods">
-            <li v-for="(d, i) in recs.improve" :key="'i' + i" :class="$style.modLine">
-              <span :class="$style.improve">↑</span> {{ d.shape }}: T{{ d.myTier }} → T{{ d.bestTier }}
+            <li
+              v-for="(d, i) in recs.improve"
+              :key="'i' + i"
+              :class="$style.modLine"
+            >
+              <span :class="$style.improve">↑</span> {{ d.shape }}: T{{
+                d.myTier
+              }}
+              → T{{ d.bestTier }}
               <span :class="$style.k">(носят {{ d.pct }}%)</span>
             </li>
-            <li v-if="!recs.improve.length" :class="$style.note">— твои моды уже на максимуме</li>
+            <li v-if="!recs.improve.length" :class="$style.note">
+              — твои моды уже на максимуме
+            </li>
           </ul>
           <div :class="$style.craftLabel">Добавить (частые, у тебя нет):</div>
           <ul :class="$style.mods">
-            <li v-for="(d, i) in recs.add.slice(0, 6)" :key="'a' + i" :class="$style.modLine">
-              <span :class="d.slotFree === false ? $style.improve : $style.fill">+</span> {{ d.shape }}
+            <li
+              v-for="(d, i) in recs.add.slice(0, 6)"
+              :key="'a' + i"
+              :class="$style.modLine"
+            >
+              <span :class="d.slotFree === false ? $style.improve : $style.fill"
+                >+</span
+              >
+              {{ d.shape }}
               <span :class="$style.k">
-                (носят {{ d.pct }}%<template v-if="d.bestTier != null">, до T{{ d.bestTier }}</template><template v-if="d.affix">, {{ d.affix === "prefix" ? "преф" : "суф" }}</template>)
-                <template v-if="d.slotFree === false"> — нет слота, свап</template>
+                (носят {{ d.pct }}%<template v-if="d.bestTier != null"
+                  >, до T{{ d.bestTier }}</template
+                ><template v-if="d.affix"
+                  >, {{ d.affix === "prefix" ? "преф" : "суф" }}</template
+                >)
+                <template v-if="d.slotFree === false">
+                  — нет слота, свап</template
+                >
               </span>
             </li>
-            <li v-if="!recs.add.length" :class="$style.note">— нечего добавить из частого</li>
+            <li v-if="!recs.add.length" :class="$style.note">
+              — нечего добавить из частого
+            </li>
           </ul>
           <div :class="$style.note">
-            Слоты: префиксы {{ analysis.prefixes.free }} своб., суффиксы {{ analysis.suffixes.free }} своб.
+            Слоты: префиксы {{ analysis.prefixes.free }} своб., суффиксы
+            {{ analysis.suffixes.free }} своб.
           </div>
           <button
             :class="$style.btn"
             :disabled="strategyLoading"
             @click="getStrategy"
           >
-            {{ strategyLoading ? "Думаю…" : "🛠 Подробнее от Claude (опционально)" }}
+            {{
+              strategyLoading
+                ? "Думаю…"
+                : "🛠 Подробнее от Claude (опционально)"
+            }}
           </button>
           <div v-if="strategyError" :class="$style.error">
             {{ strategyError }}
@@ -214,7 +253,8 @@ async function findReference() {
   comparables.value = [];
   try {
     comparables.value = await fetchComparables(item.value);
-    if (!comparables.value.length) refError.value = "Сравнимых колец не найдено.";
+    if (!comparables.value.length)
+      refError.value = "Сравнимых колец не найдено.";
   } catch (e) {
     refError.value = (e as Error).message;
   } finally {

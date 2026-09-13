@@ -12,8 +12,20 @@ const input = {
     { shape: "Gain # Mana per enemy killed", myTier: 2, bestTier: 1, pct: 23 },
   ],
   add: [
-    { shape: "# to maximum Mana", pct: 15, bestTier: 5, affix: "prefix" as const, slotFree: true },
-    { shape: "#% to Fire Resistance", pct: 15, bestTier: 4, affix: "suffix" as const, slotFree: false },
+    {
+      shape: "# to maximum Mana",
+      pct: 15,
+      bestTier: 5,
+      affix: "prefix" as const,
+      slotFree: true,
+    },
+    {
+      shape: "#% to Fire Resistance",
+      pct: 15,
+      bestTier: 4,
+      affix: "suffix" as const,
+      slotFree: false,
+    },
   ],
   freeSlots: { prefix: 2, suffix: 0 },
 };
@@ -49,7 +61,12 @@ describe("buildStrategyPrompt — промпт метода крафта пов�
 
   it("не падает без рекомендаций", () => {
     const empty = buildStrategyPrompt({
-      base: "X", itemLevel: 1, itemMods: [], improve: [], add: [], freeSlots: { prefix: 0, suffix: 0 },
+      base: "X",
+      itemLevel: 1,
+      itemMods: [],
+      improve: [],
+      add: [],
+      freeSlots: { prefix: 0, suffix: 0 },
     });
     expect(empty.user.length).toBeGreaterThan(0);
   });

@@ -73,8 +73,6 @@ describe("requestStrategy — локальный Claude CLI через подп�
       jsonResponse({ success: true, result: "ok" }),
     );
     // вызывается вообще без apiKey
-    await expect(
-      requestStrategy(prompt, { postImpl }),
-    ).resolves.toBe("ok");
+    await expect(requestStrategy(prompt, { postImpl })).resolves.toBe("ok");
   });
 });

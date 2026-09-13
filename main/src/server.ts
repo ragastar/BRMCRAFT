@@ -134,7 +134,7 @@ export async function startServer(
   server.addListener("request", (req, res) => {
     if (req.method !== "POST" || req.url !== "/claude") return;
     let body = "";
-    req.on("data", (chunk) => (body += chunk.toString("utf-8")));
+    req.on("data", (chunk: Buffer) => (body += chunk.toString("utf-8")));
     req.once("end", async () => {
       res.setHeader("content-type", "application/json");
       try {

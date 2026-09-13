@@ -82,7 +82,10 @@ describe("analyzeAffixSlots — Layer 0", () => {
       newMods: [
         mod("prefix", "Shocking", 4),
         { info: { type: "implicit", tags: [] }, stats: [] },
-        { info: { type: "explicit", generation: "corrupted", tags: [] }, stats: [] },
+        {
+          info: { type: "explicit", generation: "corrupted", tags: [] },
+          stats: [],
+        },
       ] as ParsedItem["newMods"],
     });
     const a = analyzeAffixSlots(item);

@@ -40,7 +40,12 @@ export interface AddEntry extends TemplateEntry {
 }
 export interface Recommendations {
   template: TemplateRow[];
-  improve: Array<{ shape: string; myTier: number; bestTier: number; pct: number }>;
+  improve: Array<{
+    shape: string;
+    myTier: number;
+    bestTier: number;
+    pct: number;
+  }>;
   add: AddEntry[];
 }
 
@@ -71,7 +76,12 @@ export function buildTemplate(refs: RefItem[]): ItemTemplate {
   for (const ref of refs) {
     const seen = new Set<string>();
     for (const m of ref.mods) {
-      const cur = agg.get(m.shape) ?? { count: 0, bestTier: null, prefix: 0, suffix: 0 };
+      const cur = agg.get(m.shape) ?? {
+        count: 0,
+        bestTier: null,
+        prefix: 0,
+        suffix: 0,
+      };
       if (!seen.has(m.shape)) {
         seen.add(m.shape);
         cur.count++;

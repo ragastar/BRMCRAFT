@@ -9,7 +9,12 @@ export interface StrategyInput {
   base: string;
   itemLevel?: number;
   itemMods: Array<{ affix: AffixType; tier?: number; lines: string[] }>;
-  improve: Array<{ shape: string; myTier: number; bestTier: number; pct: number }>;
+  improve: Array<{
+    shape: string;
+    myTier: number;
+    bestTier: number;
+    pct: number;
+  }>;
   add: Array<{
     shape: string;
     pct: number;
@@ -60,7 +65,9 @@ export function buildStrategyPrompt(input: StrategyInput): StrategyPrompt {
   lines.push("Поднять тир:");
   if (input.improve.length === 0) lines.push("  — нет");
   for (const i of input.improve) {
-    lines.push(`  - ${i.shape}: T${i.myTier} → T${i.bestTier} (носят ${i.pct}%)`);
+    lines.push(
+      `  - ${i.shape}: T${i.myTier} → T${i.bestTier} (носят ${i.pct}%)`,
+    );
   }
   lines.push("Добавить:");
   if (input.add.length === 0) lines.push("  — нет");
@@ -72,11 +79,15 @@ export function buildStrategyPrompt(input: StrategyInput): StrategyPrompt {
         : a.slotFree === true
           ? " — слот свободен"
           : "";
-    lines.push(`  - ${a.shape} (${affixRu(a.affix)}, носят ${a.pct}%${tier})${slot}`);
+    lines.push(
+      `  - ${a.shape} (${affixRu(a.affix)}, носят ${a.pct}%${tier})${slot}`,
+    );
   }
 
   lines.push("");
-  lines.push("Для каждой рекомендации дай метод и приблизительную вероятность.");
+  lines.push(
+    "Для каждой рекомендации дай метод и приблизительную вероятность.",
+  );
 
   return { system: SYSTEM, user: lines.join("\n") };
 }

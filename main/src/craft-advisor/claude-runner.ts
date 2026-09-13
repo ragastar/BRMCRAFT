@@ -28,7 +28,8 @@ interface ClaudeCliJson {
 
 function resolveClaudeBin(): { cmd: string; useShell: boolean } {
   const override = process.env.CRAFT_ADVISOR_CLAUDE_BIN;
-  if (override && fs.existsSync(override)) return { cmd: override, useShell: false };
+  if (override && fs.existsSync(override))
+    return { cmd: override, useShell: false };
 
   if (process.platform === "win32" && process.env.APPDATA) {
     const exe = path.join(
@@ -68,7 +69,10 @@ export async function runClaudePrompt(
         cwd: os.tmpdir(),
       });
     } catch (e) {
-      resolve({ success: false, error: `Не удалось запустить claude: ${(e as Error).message}` });
+      resolve({
+        success: false,
+        error: `Не удалось запустить claude: ${(e as Error).message}`,
+      });
       return;
     }
 
@@ -79,8 +83,8 @@ export async function runClaudePrompt(
       resolve({ success: false, error: "claude CLI: таймаут." });
     }, TIMEOUT_MS);
 
-    child.stdout.on("data", (d) => (stdout += d.toString("utf-8")));
-    child.stderr.on("data", (d) => (stderr += d.toString("utf-8")));
+    child.stdout.on("data", (d: Buffer) => (stdout += d.toString("utf-8")));
+    child.stderr.on("data", (d: Buffer) => (stderr += d.toString("utf-8")));
 
     child.on("error", (err) => {
       clearTimeout(timer);
@@ -102,14 +106,21 @@ export async function runClaudePrompt(
       try {
         const json = JSON.parse(stdout) as ClaudeCliJson;
         if (json.is_error || !json.result) {
-          resolve({ success: false, error: `claude CLI: ${json.result ?? "пустой ответ"}` });
+          resolve({
+            success: false,
+            error: `claude CLI: ${json.result ?? "пустой ответ"}`,
+          });
         } else {
           resolve({ success: true, result: json.result });
         }
       } catch {
         const text = stdout.trim();
         if (text) resolve({ success: true, result: text });
-        else resolve({ success: false, error: `claude CLI: не разобран вывод. ${stderr.slice(0, 300)}` });
+        else
+          resolve({
+            success: false,
+            error: `claude CLI: не разобран вывод. ${stderr.slice(0, 300)}`,
+          });
       }
     });
 

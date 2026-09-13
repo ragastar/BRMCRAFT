@@ -30,9 +30,19 @@ describe("parseAffix — преф/суфф из буквы тира API", () => 
 
 describe("buildTemplate — частота модов + лучший тир по выборке", () => {
   const refs: RefItem[] = [
-    { mods: [{ shape: "#% to Chaos Resistance", tier: 3 }, { shape: "# to maximum Mana", tier: 5 }] },
+    {
+      mods: [
+        { shape: "#% to Chaos Resistance", tier: 3 },
+        { shape: "# to maximum Mana", tier: 5 },
+      ],
+    },
     { mods: [{ shape: "#% to Chaos Resistance", tier: 1 }] },
-    { mods: [{ shape: "#% to Chaos Resistance", tier: 2 }, { shape: "# to maximum Mana", tier: 2 }] },
+    {
+      mods: [
+        { shape: "#% to Chaos Resistance", tier: 2 },
+        { shape: "# to maximum Mana", tier: 2 },
+      ],
+    },
     { mods: [{ shape: "# to Dexterity", tier: 4 }] },
   ];
 
@@ -45,8 +55,12 @@ describe("buildTemplate — частота модов + лучший тир по
 
   it("лучший тир = минимальный из встреченных", () => {
     const t = buildTemplate(refs);
-    expect(t.entries.find((e) => e.shape === "#% to Chaos Resistance")!.bestTier).toBe(1);
-    expect(t.entries.find((e) => e.shape === "# to maximum Mana")!.bestTier).toBe(2);
+    expect(
+      t.entries.find((e) => e.shape === "#% to Chaos Resistance")!.bestTier,
+    ).toBe(1);
+    expect(
+      t.entries.find((e) => e.shape === "# to maximum Mana")!.bestTier,
+    ).toBe(2);
   });
 
   it("отсортировано по частоте убыв.", () => {
@@ -65,7 +79,12 @@ describe("buildTemplate — частота модов + лучший тир по
 
   it("дубль формы в одном листинге считается один раз", () => {
     const t = buildTemplate([
-      { mods: [{ shape: "X", tier: 2 }, { shape: "X", tier: 1 }] },
+      {
+        mods: [
+          { shape: "X", tier: 2 },
+          { shape: "X", tier: 1 },
+        ],
+      },
     ]);
     expect(t.entries[0].count).toBe(1);
     expect(t.entries[0].bestTier).toBe(1);
@@ -74,17 +93,33 @@ describe("buildTemplate — частота модов + лучший тир по
 
 describe("recommend — рекомендации от шаблона", () => {
   const refs: RefItem[] = [
-    { mods: [{ shape: "#% increased Rarity of Items found", tier: 1 }, { shape: "# to maximum Mana", tier: 2 }] },
-    { mods: [{ shape: "#% increased Rarity of Items found", tier: 1 }, { shape: "# to Evasion Rating", tier: 2 }] },
+    {
+      mods: [
+        { shape: "#% increased Rarity of Items found", tier: 1 },
+        { shape: "# to maximum Mana", tier: 2 },
+      ],
+    },
+    {
+      mods: [
+        { shape: "#% increased Rarity of Items found", tier: 1 },
+        { shape: "# to Evasion Rating", tier: 2 },
+      ],
+    },
     { mods: [{ shape: "# to maximum Mana", tier: 3 }] },
   ];
   const myMods = [
-    { shape: "#% increased Rarity of Items found", tier: 3, affix: "suffix" as const },
+    {
+      shape: "#% increased Rarity of Items found",
+      tier: 3,
+      affix: "suffix" as const,
+    },
   ];
 
   it("improve: твой мод ниже достижимого тира", () => {
     const r = recommend(buildTemplate(refs), myMods);
-    const imp = r.improve.find((x) => x.shape === "#% increased Rarity of Items found");
+    const imp = r.improve.find(
+      (x) => x.shape === "#% increased Rarity of Items found",
+    );
     expect(imp).toBeTruthy();
     expect(imp!.myTier).toBe(3);
     expect(imp!.bestTier).toBe(1);
@@ -99,7 +134,9 @@ describe("recommend — рекомендации от шаблона", () => {
 
   it("template помечает твои моды", () => {
     const r = recommend(buildTemplate(refs), myMods);
-    const rar = r.template.find((x) => x.shape === "#% increased Rarity of Items found")!;
+    const rar = r.template.find(
+      (x) => x.shape === "#% increased Rarity of Items found",
+    )!;
     expect(rar.mine).toBe(true);
     expect(rar.myTier).toBe(3);
   });
