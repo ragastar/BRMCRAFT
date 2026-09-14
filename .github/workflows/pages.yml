@@ -31,9 +31,8 @@ jobs:
           BASE_PATH: ${{ vars.BASE_PATH || format('/{0}/', github.event.repository.name) }}
           # Адрес воркера листа ожидания (worker/README.md); пусто — режим «записали».
           VITE_WAITLIST_ENDPOINT: ${{ vars.WAITLIST_ENDPOINT }}
+      # Pages включается один раз руками: Settings → Pages → Source → GitHub Actions
       - uses: actions/configure-pages@v5
-        with:
-          enablement: true # включить Pages (Source: GitHub Actions), если ещё не включён
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
