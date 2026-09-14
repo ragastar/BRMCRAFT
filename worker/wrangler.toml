@@ -1,0 +1,9 @@
+name = "levin-waitlist"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+# Секреты задаются командой, в файл не пишутся:
+#   npx wrangler secret put TG_BOT_TOKEN
+#   npx wrangler secret put TG_CHAT_ID
+[vars]
+ALLOWED_ORIGINS = "https://ragastar.github.io,https://projectlevin.ru,https://www.projectlevin.ru"

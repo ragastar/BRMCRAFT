@@ -65,6 +65,22 @@ for (const s of sizes) {
     await page.waitForTimeout(1600);
     await page.screenshot({ path: `${out}/${s.name}-panel${i + 1}.png` });
   }
+  // SHOT_FORM=1 — заполнить и отправить форму листа ожидания, снять результат
+  if (process.env.SHOT_FORM) {
+    await page.evaluate(() => {
+      const el = document.querySelector("#waitlist");
+      const y = el.getBoundingClientRect().top + window.scrollY - window.innerHeight * 0.55 + 2;
+      if (window.__lenis) window.__lenis.scrollTo(y, { immediate: true, force: true });
+      else window.scrollTo({ top: y, behavior: "instant" });
+    });
+    await page.fill("#wl-name", "Тест");
+    await page.fill("#wl-email", "test@example.com");
+    await page.click("#waitlist-form button[type=submit]");
+    await page.waitForSelector("#waitlist-form .form__done:not([hidden])", { timeout: 5000 });
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: `${out}/${s.name}-form-done.png` });
+  }
+
   await page.evaluate(() => {
     const y = document.body.scrollHeight;
     if (window.__lenis) window.__lenis.scrollTo(y, { immediate: true, force: true });
