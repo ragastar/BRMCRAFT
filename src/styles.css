@@ -340,6 +340,14 @@ a {
   border-color: var(--muted);
 }
 
+.form .hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
 .form__done {
   margin: 4px 0 0 !important;
 }

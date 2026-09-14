@@ -259,6 +259,7 @@ export function createDevice(canvas, { reducedMotion = false } = {}) {
 
   function setState(name, opts = {}) {
     if (!EYE_STATES[name]) return;
+    if (name === currentState && !opts.force) return; // уже в этом состоянии — не дёргаем
     const t = EYE_STATES[name];
     currentState = name;
     const duration = reducedMotion ? 0 : (opts.duration ?? 0.9);
