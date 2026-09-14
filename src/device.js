@@ -8,7 +8,17 @@ import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.j
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { mergeVertices } from "three/addons/utils/BufferGeometryUtils.js";
 import gsap from "gsap";
-import { EYE_W, EYE_H, EYE_STATES, createEyeParams, drawEye } from "./eye.js";
+import {
+  EYE_W,
+  EYE_H,
+  EYE_STATES,
+  EYE_COLORS,
+  PAUSED_PARAMS,
+  DOTS_MAX,
+  DOTS_PER_SEC,
+  createEyeParams,
+  drawEye,
+} from "./eye.js";
 
 const W = 6;
 const H = 2.8;
@@ -251,20 +261,24 @@ export function createDevice(canvas, { reducedMotion = false } = {}) {
   let angle = 0;
   let dirty = true;
   let currentState = null;
+  let stateSince = performance.now(); // для phase: точки, строки, вспышки
+  let program = null; // gsap.timeline для циклических состояний (pause, initials)
+  let ticks = []; // отметки моментов в состоянии flash
+  let flashCycle = -1;
+  const glowState = { opacity: 0 }; // базовая яркость свечения на корпус (тянется GSAP)
   let targetYaw = YAW0;
   let targetPitch = PITCH0;
   rig.rotation.set(PITCH0, YAW0, 0);
 
   const glowColor = new THREE.Color();
+  const setGlowColor = (c) => {
+    glowColor.setRGB(c.r / 255, c.g / 255, c.b / 255, THREE.SRGBColorSpace);
+    glow.material.color.copy(glowColor);
+  };
 
-  function setState(name, opts = {}) {
-    if (!EYE_STATES[name]) return;
-    if (name === currentState && !opts.force) return; // уже в этом состоянии — не дёргаем
-    const t = EYE_STATES[name];
-    currentState = name;
-    const duration = reducedMotion ? 0 : (opts.duration ?? 0.9);
-    const ease = opts.ease ?? "power2.inOut";
-    gsap.killTweensOf([eye, eye.ring, eye.pupil, glow.material]);
+  // Плавно привести параметры глаза к набору t (без смены состояния).
+  function applyParams(t, duration, ease = "power2.inOut") {
+    gsap.killTweensOf([eye, eye.ring, eye.pupil, glowState]);
     gsap.to(eye, {
       open: t.open,
       ringA: t.ringA,
@@ -272,17 +286,71 @@ export function createDevice(canvas, { reducedMotion = false } = {}) {
       glow: t.glow,
       spin: t.spin,
       text: t.text,
-      letter: t.letter,
+      labelA: t.labelA,
+      dotsA: t.dotsA,
+      linesA: t.linesA,
       duration,
       ease,
       onUpdate: () => (dirty = true),
     });
     gsap.to(eye.ring, { r: t.ring.r, g: t.ring.g, b: t.ring.b, duration, ease });
     gsap.to(eye.pupil, { r: t.pupil.r, g: t.pupil.g, b: t.pupil.b, duration, ease });
-    glowColor.setRGB(t.pupil.r / 255, t.pupil.g / 255, t.pupil.b / 255, THREE.SRGBColorSpace);
-    glow.material.color.copy(glowColor);
-    gsap.to(glow.material, { opacity: t.glow * 0.55, duration, ease });
+    setGlowColor(t.glow > 0 ? t.pupil : EYE_COLORS.glow);
+    gsap.to(glowState, { opacity: t.glow * 0.55, duration, ease });
     dirty = true;
+  }
+
+  function setState(name, opts = {}) {
+    if (!EYE_STATES[name]) return;
+    if (name === currentState && !opts.force) return; // уже в этом состоянии — не дёргаем
+    const t = EYE_STATES[name];
+    currentState = name;
+    stateSince = performance.now();
+    ticks = [];
+    flashCycle = -1;
+    eye.pulse = 0;
+    if (program) {
+      program.kill();
+      program = null;
+    }
+    if (t.label) {
+      eye.label = t.label;
+      eye.labelSize = t.labelSize;
+    }
+    const duration = reducedMotion ? 0 : (opts.duration ?? 0.9);
+    applyParams(t, duration, opts.ease ?? "power2.inOut");
+
+    // --- циклические сценарии ---
+    if (name === "pause") {
+      if (reducedMotion) {
+        applyParams(PAUSED_PARAMS, 0);
+      } else {
+        // красный (запись) 2.2 с → плавно белый («пауза») 2.6 с → снова красный
+        program = gsap.timeline({ repeat: -1 });
+        program.call(() => applyParams(PAUSED_PARAMS, 1.1), null, 2.2);
+        program.call(() => applyParams(EYE_STATES.pause, 0.8), null, 5.9);
+        program.to({}, { duration: 7.2 }, 0); // длина цикла
+      }
+    } else if (name === "initials" && !reducedMotion) {
+      // «М.Л.» 2.4 с → гаснет → «А.С.» 2.4 с → гаснет → снова «М.Л.»
+      const swap = (label) => () => {
+        eye.label = label;
+        dirty = true;
+      };
+      const fade = (to, at) => gsap.to(eye, { labelA: to, duration: 0.35, ease: "power1.inOut", onUpdate: () => (dirty = true) });
+      program = gsap.timeline({ repeat: -1 });
+      program.add(fade(0), 2.4);
+      program.call(swap("А.С."), null, 2.8);
+      program.add(fade(1), 2.8);
+      program.add(fade(0), 5.6);
+      program.call(swap("М.Л."), null, 6.0);
+      program.add(fade(1), 6.0);
+      program.to({}, { duration: 8.4 }, 0);
+    } else if (name === "flash" && reducedMotion) {
+      ticks = [-1.2, 0.4]; // статичные отметки вместо вспышек
+    } else if (name === "dots" && reducedMotion) {
+      stateSince = performance.now() - ((DOTS_MAX / DOTS_PER_SEC) * 1000 + 1000); // все точки сразу
+    }
   }
 
   function setScroll(progress) {
@@ -304,15 +372,37 @@ export function createDevice(canvas, { reducedMotion = false } = {}) {
     last = now;
     const t = now / 1000;
 
+    const phase = reducedMotion && currentState === "lines" ? 0 : (now - stateSince) / 1000;
+
     if (eye.spin > 0.001) {
       angle += eye.spin * dt * 0.25;
       dirty = true;
     }
+    // состояния, живущие во времени
+    if (currentState === "flash" && !reducedMotion) {
+      // вспышка каждые 3 с: резко вверх за 0.1 с, затухание ~0.8 с; после каждой — отметка на кольце
+      const cyc = Math.floor(phase / 3);
+      const p = phase - cyc * 3;
+      if (cyc !== flashCycle) {
+        flashCycle = cyc;
+        if (ticks.length < 6) ticks.push(-Math.PI / 2 + ticks.length * 1.9);
+      }
+      const pulse = p < 0.1 ? p / 0.1 : Math.exp(-(p - 0.1) * 5.5);
+      if (pulse > 0.004 || eye.pulse > 0.004) {
+        eye.pulse = pulse > 0.004 ? pulse : 0;
+        dirty = true;
+      }
+    } else if (currentState === "dots" && phase < DOTS_MAX / DOTS_PER_SEC + 0.5) {
+      dirty = true;
+    } else if (currentState === "lines" && !reducedMotion) {
+      dirty = true;
+    }
     if (dirty) {
-      drawEye(ectx, eye, angle);
+      drawEye(ectx, eye, angle, phase, ticks);
       eyeTex.needsUpdate = true;
       dirty = false;
     }
+    glow.material.opacity = Math.max(glowState.opacity, eye.pulse * 0.6);
 
     rig.rotation.y += (targetYaw - rig.rotation.y) * 0.08;
     rig.rotation.x += (targetPitch - rig.rotation.x) * 0.08;

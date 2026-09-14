@@ -55,7 +55,11 @@ for (const s of sizes) {
   // Каждая панель: прокручиваем так, чтобы её верх встал на 55% высоты окна
   // (нижняя половина под устройством), ждём анимации, снимаем.
   const count = await page.locator(".panel").count();
+  // SHOT_PANELS=7,8,9 — снять только эти панели; SHOT_WAIT — пауза перед кадром (мс)
+  const only = (process.env.SHOT_PANELS || "").split(",").filter(Boolean).map(Number);
+  const wait = Number(process.env.SHOT_WAIT || 1600);
   for (let i = 0; i < count; i++) {
+    if (only.length && !only.includes(i + 1)) continue;
     await page.evaluate((i) => {
       const el = document.querySelectorAll(".panel")[i];
       const r = el.getBoundingClientRect();
@@ -67,7 +71,7 @@ for (const s of sizes) {
       if (window.__lenis) window.__lenis.scrollTo(y, { immediate: true, force: true });
       else window.scrollTo({ top: y, behavior: "instant" });
     }, i);
-    await page.waitForTimeout(1600);
+    await page.waitForTimeout(wait);
     await page.screenshot({ path: `${out}/${s.name}-panel${i + 1}.png` });
   }
   // SHOT_FORM=1 — заполнить и отправить форму листа ожидания, снять результат

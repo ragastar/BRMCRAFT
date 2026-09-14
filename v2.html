@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Левин — диктофон с ИИ, который работает в России</title>
+    <meta
+      name="description"
+      content="Записал встречу — через десять минут расшифровка, итоги и задачи у вас на почте. Без VPN. Оплата картой Мир."
+    />
+    <meta name="theme-color" content="#05070C" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta property="og:title" content="Левин — диктофон с ИИ, который работает в России" />
+    <meta
+      property="og:description"
+      content="Записал встречу — через десять минут расшифровка, итоги и задачи у вас на почте. Без VPN. Оплата картой Мир."
+    />
+  </head>
+  <body>
+    <div class="page">
+      <header class="topbar">
+        <a class="wordmark" href="#top">Левин</a>
+        <a class="toplink" href="#waitlist">Лист ожидания</a>
+      </header>
+
+      <div class="stage" id="stage" aria-hidden="true">
+        <canvas id="device"></canvas>
+      </div>
+
+      <main class="panels">
+        <section class="panel panel--hero" id="top" data-eye="open">
+          <div class="panel__text">
+            <p class="name">ЛЕВИН.</p>
+            <h1>Диктофон с ИИ, который работает в России.</h1>
+            <p class="lead">
+              Записал встречу — через десять минут расшифровка, итоги и задачи у вас на почте.
+              Без VPN. Оплата картой Мир.
+            </p>
+            <a class="link" href="#waitlist">Встать в лист ожидания</a>
+          </div>
+        </section>
+
+        <section class="panel" data-eye="half">
+          <div class="panel__text">
+            <h2>Сейчас такие штуки стоят двадцать тысяч. А&nbsp;потом за них нельзя заплатить.</h2>
+            <p class="muted">
+              Plaud и другие продаются на Ozon тысячами, но подписка — только с зарубежной карты
+              и через VPN. Люди покупают железку и мучаются с оплатой каждый месяц.
+            </p>
+          </div>
+          <div class="panel__aside">
+            <ul class="compare">
+              <li><span>Plaud Note Pro</span><span class="price">41 100 ₽</span></li>
+              <li><span>Plaud Note</span><span class="price">23 200 ₽</span></li>
+              <li class="is-ours"><span>Левин</span><span class="price">14 900 ₽</span></li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="panel" data-eye="record">
+          <div class="panel__text">
+            <h2>Пишет только по кнопке. И&nbsp;все это видят.</h2>
+            <p class="muted">
+              Нажали — глаз загорелся красным. Никакой скрытой записи: собеседник видит, что идёт
+              протокол, и доверяет вам больше, а не меньше.
+            </p>
+          </div>
+        </section>
+
+        <section class="panel" data-eye="text">
+          <div class="panel__text">
+            <h2>Через десять минут — текст на почте.</h2>
+            <p class="muted">
+              Полная расшифровка на русском, короткие итоги, список задач и кто что обещал. Каждая
+              встреча — отдельное письмо, ничего искать не надо.
+            </p>
+          </div>
+        </section>
+
+        <section class="panel" data-eye="cold">
+          <div class="panel__text">
+            <h2>Работает отсюда. Платится отсюда.</h2>
+            <p class="muted">
+              Распознавание и облако — в России, оплата картой Мир или по счёту на компанию.
+              Подписка 990 ₽ в месяц, и этого хватает на любой рабочий день.
+            </p>
+          </div>
+        </section>
+
+        <section class="panel" data-eye="letter">
+          <div class="panel__text">
+            <h2>Экран — под вас.</h2>
+            <p class="muted">
+              Ваши инициалы, логотип компании или просто зрачок. Для первых ста заказов — любая
+              гравировка бесплатно.
+            </p>
+          </div>
+        </section>
+
+        <section class="panel" data-eye="dots">
+          <div class="panel__text">
+            <h2>Ваши слова — ваш актив.</h2>
+            <p class="muted">
+              Каждая встреча, каждое обещание, каждое решение складываются в один файл, который
+              принадлежит вам. Это ваш личный контекст: кто вы, с кем работаете, что для вас
+              важно. Загрузите его в любую нейросеть — и она будет знать вас, а не отвечать
+              вслепую. Первая версия Левина ведёт к одному: чтобы через месяц у вас был контекст
+              о себе, а не пачка записей.
+            </p>
+          </div>
+        </section>
+
+        <section class="panel" data-eye="flash">
+          <div class="panel__text">
+            <h2>Отметьте момент одной кнопкой.</h2>
+            <p class="muted">
+              Короткое нажатие во время встречи — и в итогах это место выделено. Вы сами говорите
+              машине, что важно, и получаете не пересказ, а то, что вам нужно.
+            </p>
+          </div>
+        </section>
+
+        <section class="panel" data-eye="lines">
+          <div class="panel__text">
+            <h2>Знает, как говорят юристы.</h2>
+            <p class="muted">
+              Словарь под вашу профессию: договоры, счета, судебные термины распознаются как надо.
+              Для первых ста заказов словарь собираем вместе с вами.
+            </p>
+          </div>
+        </section>
+
+        <section class="panel" data-eye="pause">
+          <div class="panel__text">
+            <h2>Собеседник видит. И&nbsp;соглашается.</h2>
+            <p class="muted">
+              Красный глаз — идёт запись, это видят все. Во второй версии Левин услышит новый голос
+              и поставит запись на паузу, пока человек не скажет «да». Честная запись —
+              единственная, которой доверяют.
+            </p>
+          </div>
+        </section>
+
+        <section class="panel" data-eye="initials">
+          <div class="panel__text">
+            <h2>Подарок, который не уберут в ящик.</h2>
+            <p class="muted">
+              Левин для команды или для партнёра: логотип компании на корпусе, имя на экране,
+              и при включении — личное приветствие: «Доброе утро, Марина. Сегодня четыре встречи.»
+              От десяти штук — свой цвет корпуса и словарь под вашу отрасль.
+            </p>
+            <!-- TODO: адрес для корпоративных заказов владелец даст отдельно -->
+            <a class="btn btn--inline" href="mailto:?subject=%D0%9A%D0%BE%D1%80%D0%BF%D0%BE%D1%80%D0%B0%D1%82%D0%B8%D0%B2%D0%BD%D1%8B%D0%B9%20%D0%B7%D0%B0%D0%BA%D0%B0%D0%B7%20%D0%9B%D0%B5%D0%B2%D0%B8%D0%BD">Запросить корпоративный заказ</a>
+          </div>
+        </section>
+
+        <section class="panel" data-eye="open">
+          <div class="panel__text">
+            <h2>Что дальше</h2>
+          </div>
+          <div class="panel__aside">
+            <ol class="roadmap">
+              <li>
+                <span class="n">01</span>
+                <div>
+                  <h3>Версия 1 — почта</h3>
+                  <p>Все расшифровки письмом, ноль настройки.</p>
+                </div>
+              </li>
+              <li>
+                <span class="n">02</span>
+                <div>
+                  <h3>Версия 2 — ваши инструменты</h3>
+                  <p>Telegram, Obsidian, Notion, таблицы.</p>
+                </div>
+              </li>
+              <li>
+                <span class="n">03</span>
+                <div>
+                  <h3>Версия 3 — своё приложение</h3>
+                  <p>Поиск по всем встречам, память о людях и договорённостях.</p>
+                </div>
+              </li>
+            </ol>
+          </div>
+        </section>
+
+        <section class="panel panel--offers" id="waitlist" data-eye="record">
+          <div class="panel__text">
+            <h2>Первая партия — сто штук.</h2>
+          </div>
+          <div class="panel__aside offers">
+            <div class="offer">
+              <h3><span>Бронь</span><span class="price">1 000 ₽</span></h3>
+              <p class="muted">Вычитается из цены.</p>
+              <ul>
+                <li>Место в первой сотне</li>
+                <li>Гравировка бесплатно</li>
+                <li>14 900 ₽ и год подписки в цене</li>
+              </ul>
+              <button class="btn" type="button" disabled>Забронировать — скоро</button>
+            </div>
+            <div class="offer">
+              <h3><span>Лист ожидания</span><span class="price">0 ₽</span></h3>
+              <form class="form" id="waitlist-form" novalidate>
+                <label class="sr-only" for="wl-name">Имя</label>
+                <input id="wl-name" type="text" name="name" placeholder="Имя" autocomplete="name" required />
+                <label class="sr-only" for="wl-email">Почта</label>
+                <input id="wl-email" type="email" name="email" placeholder="Почта" autocomplete="email" required />
+                <input class="hp" type="text" name="company" tabindex="-1" autocomplete="off" aria-hidden="true" />
+                <button class="btn btn--primary" type="submit">Встать в лист ожидания</button>
+                <p class="form__done" hidden>Записали. Как откроем бронь — напишем первым.</p>
+                <p class="form__error" hidden></p>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel panel--investors" id="investors" data-eye="cold">
+          <div class="panel__text">
+            <h2>Инвесторам</h2>
+            <p class="lead">Рынок уже есть, его просто никто не сделал русским.</p>
+          </div>
+          <div class="panel__aside">
+            <div class="stats">
+              <div class="stat"><b>2 млн</b><span>устройств Plaud продано в мире</span></div>
+              <div class="stat"><b>$100 млн</b><span>в год приносит подписка Plaud</span></div>
+              <div class="stat"><b>5 000+</b><span>отзывов на Plaud на Ozon</span></div>
+              <div class="stat"><b>0</b><span>российских производителей</span></div>
+            </div>
+            <div class="unique">
+              <p class="eyebrow">Чего нет ни у кого</p>
+              <p>Работает из России и платится рублями.</p>
+              <p>Честная запись с согласием собеседника.</p>
+              <p>Личный контекст, который забираешь с собой.</p>
+            </div>
+          </div>
+          <div class="panel__text panel__text--after">
+            <p class="muted">
+              Себестоимость устройства — 6–9 тысяч, цена — 15–18. Деньги — в подписке: расшифровка
+              минуты стоит рубли, подписка — 990 ₽ в месяц. Железо открытое, сборка в Москве.
+            </p>
+            <p class="sign">Михаил Левин · projectlevin.ru</p>
+          </div>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <p>
+          Левин — проект Михаила Левина, Москва. Устройство на открытой платформе, сборка
+          в собственном цехе. Цены предварительные. Запись ведётся только по нажатию кнопки,
+          устройство не маскируется и имеет индикатор записи.
+        </p>
+      </footer>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

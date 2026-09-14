@@ -7,5 +7,9 @@ export default defineConfig({
   build: {
     target: "es2020",
     sourcemap: false,
+    // index.html — вариант 1, v2.html — вариант 2 (расширенный: +5 панелей)
+    rollupOptions: {
+      input: { main: "index.html", v2: "v2.html" },
+    },
   },
 });

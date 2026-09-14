@@ -344,6 +344,29 @@ a {
   border-color: var(--muted);
 }
 
+.btn--inline {
+  width: auto;
+  margin-top: 6px;
+}
+
+.unique {
+  margin-top: 18px;
+}
+
+.unique p {
+  margin: 0 0 6px;
+}
+
+.eyebrow {
+  font-family: var(--font-head);
+  font-weight: 300;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 10px !important;
+}
+
 .form .hp {
   position: absolute;
   left: -9999px;
