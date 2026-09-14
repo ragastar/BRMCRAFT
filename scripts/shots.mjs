@@ -58,7 +58,12 @@ for (const s of sizes) {
   for (let i = 0; i < count; i++) {
     await page.evaluate((i) => {
       const el = document.querySelectorAll(".panel")[i];
-      const y = el.getBoundingClientRect().top + window.scrollY - window.innerHeight * 0.55 + 2;
+      const r = el.getBoundingClientRect();
+      // десктоп: панель по центру окна; мобильный: верх панели на 55% (под сценой)
+      const y =
+        window.innerWidth >= 900
+          ? r.top + window.scrollY + r.height / 2 - window.innerHeight / 2
+          : r.top + window.scrollY - window.innerHeight * 0.55 + 2;
       if (window.__lenis) window.__lenis.scrollTo(y, { immediate: true, force: true });
       else window.scrollTo({ top: y, behavior: "instant" });
     }, i);
@@ -69,7 +74,11 @@ for (const s of sizes) {
   if (process.env.SHOT_FORM) {
     await page.evaluate(() => {
       const el = document.querySelector("#waitlist");
-      const y = el.getBoundingClientRect().top + window.scrollY - window.innerHeight * 0.55 + 2;
+      const r = el.getBoundingClientRect();
+      const y =
+        window.innerWidth >= 900
+          ? r.top + window.scrollY + r.height / 2 - window.innerHeight / 2
+          : r.top + window.scrollY - window.innerHeight * 0.55 + 2;
       if (window.__lenis) window.__lenis.scrollTo(y, { immediate: true, force: true });
       else window.scrollTo({ top: y, behavior: "instant" });
     });

@@ -16,7 +16,7 @@
   --cold: #dde6f0;
 
   --gutter: 20px;
-  --stage-h: 50svh;
+  --stage-h: 46svh;
   --font-head: "Unbounded", system-ui, sans-serif;
   --font-body: "Golos Text", system-ui, sans-serif;
 }
@@ -85,22 +85,22 @@ a {
 }
 
 .topbar {
-  position: absolute;
+  position: fixed;
   inset: 0 0 auto 0;
+  z-index: 5;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: calc(16px + env(safe-area-inset-top)) var(--gutter) 0;
+  padding: calc(16px + env(safe-area-inset-top)) var(--gutter) 12px;
+  background: var(--bg);
   font-family: var(--font-head);
   font-weight: 500;
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  pointer-events: none;
 }
 
 .topbar a {
-  pointer-events: auto;
   text-decoration: none;
   color: var(--muted);
 }
@@ -406,59 +406,85 @@ a {
   max-width: 600px;
 }
 
-/* ---------- десктоп ---------- */
+/* ---------- десктоп: устройство в правой колонке во всю высоту, текст слева ---------- */
 
 @media (min-width: 900px) {
   :root {
     --gutter: 64px;
   }
 
-  .panel {
+  .page {
     display: grid;
-    grid-template-columns: minmax(0, 560px) minmax(0, 520px);
-    column-gap: 72px;
-    align-content: start;
-    min-height: 58svh;
-    padding-top: 6svh;
+    grid-template-columns: minmax(0, 11fr) minmax(0, 9fr);
   }
 
-  .panel__text {
+  .stage {
+    grid-column: 2;
+    grid-row: 1;
+    height: 100vh;
+    background: transparent;
+  }
+
+  .stage::after {
+    display: none;
+  }
+
+  .panels {
     grid-column: 1;
+    grid-row: 1;
+  }
+
+  .footer {
+    grid-column: 1 / -1;
+  }
+
+  .panel {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 80vh;
+    padding: 12vh var(--gutter) 12vh;
+  }
+
+  .panel--hero {
+    min-height: 100vh;
+    padding-top: 14vh;
+  }
+
+  .panel__text,
+  .panel__aside,
+  .footer p {
+    max-width: 640px;
   }
 
   .panel__aside {
-    grid-column: 2;
-    grid-row: 1 / span 2;
-    margin-top: 0;
+    margin-top: 28px;
   }
 
   .panel__text--after {
-    grid-column: 1;
-    margin-top: 0;
+    margin-top: 24px;
   }
 
   .panel h2 {
-    font-size: 32px;
+    font-size: 34px;
   }
 
   .panel--hero .name {
-    font-size: 72px;
+    font-size: 84px;
   }
 
   .panel--hero h1 {
-    font-size: 28px;
-  }
-
-  .offers {
-    grid-template-columns: 1fr 1fr;
+    font-size: 30px;
   }
 
   .stats {
-    gap: 26px 24px;
+    gap: 28px 24px;
   }
+}
 
-  .footer p {
-    max-width: 760px;
+@media (min-width: 1200px) {
+  .offers {
+    grid-template-columns: 1fr 1fr;
   }
 }
 

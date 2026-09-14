@@ -12,7 +12,7 @@ const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matc
 // --- плавный скролл (Lenis), только если пользователь не просил меньше движения
 let lenis = null;
 if (!reducedMotion) {
-  lenis = new Lenis({ lerp: 0.1 });
+  lenis = new Lenis({ lerp: 0.13 });
   lenis.on("scroll", ScrollTrigger.update);
   gsap.ticker.add((t) => lenis.raf(t * 1000));
   gsap.ticker.lagSmoothing(0);
@@ -39,12 +39,12 @@ window.__device = device;
 // не перебил длинное открытие коротким.
 device.setState("open", { duration: 1.4, ease: "power3.out" });
 
-// --- состояния глаза по панелям: активна та панель, чей верх прошёл 62% высоты окна
+// --- состояния глаза по панелям: активна панель, накрывающая линию 55% высоты окна
 document.querySelectorAll(".panel[data-eye]").forEach((panel) => {
   ScrollTrigger.create({
     trigger: panel,
-    start: "top 62%",
-    end: "bottom 62%",
+    start: "top 55%",
+    end: "bottom 55%",
     onToggle: (self) => {
       if (self.isActive) device.setState(panel.dataset.eye);
     },
