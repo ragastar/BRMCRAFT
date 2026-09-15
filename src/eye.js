@@ -18,7 +18,8 @@ const C = {
   // бренды (примеры оформления)
   sberA: { r: 33, g: 160, b: 56 }, // зелёный
   sberB: { r: 18, g: 201, b: 208 }, // бирюзовый край градиента
-  gold: { r: 242, g: 183, b: 5 }, // золото Теремка
+  yellow: { r: 255, g: 204, b: 0 }, // жёлтый Билайна
+  ink: { r: 18, g: 18, b: 20 }, // чёрные полосы
 };
 export const EYE_COLORS = C;
 
@@ -59,8 +60,8 @@ export const EYE_STATES = {
   initials: { ...BASE, ringA: 0.3, pupilA: 0, labelA: 1, label: "М.Л.", labelSize: 78 },
   // бренды: корпус перекрашивает device.js, здесь — экран
   sber: { ...BASE, ringA: 0.9, ring: C.sberA, pupil: C.sberA, pupilA: 0, glow: 0.5, markA: 1, mark: "sber" },
-  teremok: { ...BASE, ringA: 0.9, ring: C.gold, pupil: C.gold, pupilA: 0, glow: 0.35, labelA: 1, label: "Т", labelSize: 130, labelColor: C.gold },
-  // панель «В цветах вашего бренда»: device.js по кругу показывает sber → teremok
+  beeline: { ...BASE, ringA: 0, ring: C.yellow, pupil: C.ink, pupilA: 0, glow: 0, markA: 1, mark: "beeline" },
+  // панель «В цветах вашего бренда»: device.js по кругу показывает sber → beeline
   brand: { ...BASE, ringA: 0.9, ring: C.sberA, pupil: C.sberA, pupilA: 0, glow: 0.5, markA: 1, mark: "sber" },
 };
 
@@ -330,6 +331,19 @@ export function drawEye(ctx, p, angle, phase = 0, ticks = []) {
     ctx.lineTo(cx + R * 0.62, cy - R * 0.42);
     ctx.stroke();
     ctx.lineCap = "butt";
+  }
+
+  // знак бренда: концентрические жёлто-чёрные полосы на всю радужку (пример оформления)
+  if (p.markA > 0.01 && p.mark === "beeline") {
+    const bands = 6;
+    const step = R_OUT / bands;
+    for (let i = 0; i < bands; i++) {
+      const r = R_OUT - i * step;
+      ctx.fillStyle = rgba(i % 2 === 0 ? C.yellow : C.ink, p.markA);
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, TAU);
+      ctx.fill();
+    }
   }
 
   // надпись вместо зрачка («Л», инициалы, буква бренда)

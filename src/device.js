@@ -31,7 +31,7 @@ const SCREEN_H = 1.57; // экран-миндаль ≈ 3:1, повторяет 
 const BODY_DEFAULT = 0x101114;
 const BRANDS = {
   sber: { body: 0x0f5f3c },
-  teremok: { body: 0x8a1a1e },
+  beeline: { body: 0xc49a00 },
 };
 BRANDS.brand = BRANDS.sber; // панель брендинга стартует со Сбера
 
@@ -374,9 +374,9 @@ export function createDevice(canvas, { reducedMotion = false, still = false, dis
       program.add(fade(1), 6.0);
       program.to({}, { duration: 8.4 }, 0);
     } else if (name === "brand" && !reducedMotion) {
-      // Сбер 3,2 с → Теремок 3,2 с → снова Сбер
+      // Сбер 3,2 с → Билайн 3,2 с → снова Сбер
       program = gsap.timeline({ repeat: -1 });
-      program.call(() => applyState("teremok", 0.9), null, 3.2);
+      program.call(() => applyState("beeline", 0.9), null, 3.2);
       program.call(() => applyState("sber", 0.9), null, 6.4);
       program.to({}, { duration: 6.4 }, 0);
     } else if (name === "flash" && reducedMotion) {
