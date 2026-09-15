@@ -1,0 +1,86 @@
+/* Страница «Комплектация»: коробка сверху, список под ней. */
+
+.boxpage {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 var(--gutter) 56px;
+}
+
+.bstage {
+  height: 58svh;
+  min-height: 300px;
+  margin-top: 52px;
+}
+
+.bstage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.kit {
+  max-width: 640px;
+  padding-top: 8px;
+}
+
+.kit h1 {
+  font-family: var(--font-head);
+  font-weight: 500;
+  font-size: clamp(26px, 6.4vw, 38px);
+  line-height: 1.15;
+  margin: 0 0 14px;
+}
+
+.kit p {
+  margin: 0 0 14px;
+  max-width: 62ch;
+}
+
+.kit__list {
+  list-style: none;
+  counter-reset: kit;
+  margin: 22px 0 18px;
+  padding: 0;
+  border-top: 1px solid var(--line);
+}
+
+.kit__list li {
+  counter-increment: kit;
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 4px 10px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.kit__list li::before {
+  content: "0" counter(kit);
+  grid-row: 1 / span 2;
+  font-family: var(--font-head);
+  font-weight: 300;
+  font-size: 13px;
+  color: var(--muted);
+  padding-top: 4px;
+}
+
+.kit__list b {
+  font-family: var(--font-head);
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 1.3;
+}
+
+.kit__list span {
+  color: var(--muted);
+}
+
+.kit .btn--inline {
+  margin-top: 10px;
+}
+
+@media (min-width: 900px) {
+  .bstage {
+    height: 72vh;
+    margin-top: 56px;
+  }
+}
