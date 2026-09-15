@@ -287,23 +287,45 @@ export function createBox(canvas) {
   rim.position.set(2, 8, -12);
   scene.add(key, fill, rim, new THREE.AmbientLight(0xffffff, 0.16));
 
-  // --- камера ---
-  const target = new THREE.Vector3(0, 4.6, -1.2);
+  // --- камера: точное вписывание сцены при любом соотношении сторон ---
+  // Считаем габариты всего, что в коробке (с открытой крышкой), и подбираем
+  // расстояние так, чтобы все восемь углов попали в кадр с полями.
+  world.updateMatrixWorld(true);
+  const bounds = new THREE.Box3().setFromObject(world);
+  const center = bounds.getCenter(new THREE.Vector3());
+  const corners = [];
+  for (const x of [bounds.min.x, bounds.max.x])
+    for (const y of [bounds.min.y, bounds.max.y])
+      for (const z of [bounds.min.z, bounds.max.z]) corners.push(new THREE.Vector3(x, y, z));
+  const viewDir = new THREE.Vector3(0.15, 0.78, 0.62).normalize();
+  const FILL = 0.94; // крайняя точка на 94 % полукадра — немного воздуха по краям
+
+  function frame() {
+    let dist = 40;
+    for (let k = 0; k < 5; k++) {
+      camera.position.copy(center).addScaledVector(viewDir, dist);
+      camera.lookAt(center);
+      camera.updateMatrixWorld(true);
+      camera.updateProjectionMatrix();
+      let m = 0;
+      for (const c of corners) {
+        const p = c.clone().project(camera);
+        m = Math.max(m, Math.abs(p.x), Math.abs(p.y));
+      }
+      dist *= m / FILL;
+    }
+    camera.position.copy(center).addScaledVector(viewDir, dist);
+    camera.lookAt(center);
+    camera.updateProjectionMatrix();
+  }
+
   function resize() {
     const w = canvas.clientWidth || 1;
     const h = canvas.clientHeight || 1;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
-    // вписываем коробку: по ширине ~21 ед., по высоте ~24 ед. вместе с открытой крышкой
-    const vfov = (camera.fov * Math.PI) / 180;
-    const hfov = 2 * Math.atan(Math.tan(vfov / 2) * camera.aspect);
-    const distH = 24 / 2 / Math.tan(vfov / 2);
-    const distW = 21 / 2 / Math.tan(hfov / 2);
-    const dist = Math.max(distH, distW);
-    const dir = new THREE.Vector3(0.15, 0.78, 0.62).normalize();
-    camera.position.copy(target).addScaledVector(dir, dist);
-    camera.lookAt(target);
     camera.updateProjectionMatrix();
+    frame();
     render();
   }
 
