@@ -298,7 +298,7 @@ export function createBox(canvas) {
     for (const y of [bounds.min.y, bounds.max.y])
       for (const z of [bounds.min.z, bounds.max.z]) corners.push(new THREE.Vector3(x, y, z));
   const viewDir = new THREE.Vector3(0.15, 0.78, 0.62).normalize();
-  const FILL = 0.94; // крайняя точка на 94 % полукадра — немного воздуха по краям
+  const FILL = 0.9; // крайняя точка на 90 % полукадра — воздух по краям
 
   function frame() {
     let dist = 40;
