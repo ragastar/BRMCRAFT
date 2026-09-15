@@ -60,6 +60,16 @@ ScrollTrigger.create({
   onUpdate: (self) => device.setScroll(self.progress),
 });
 
+// --- кнопки брендов в панели «В цветах вашего бренда»
+const brandChips = [...document.querySelectorAll("[data-brand]")];
+brandChips.forEach((chip) => {
+  chip.addEventListener("click", () => {
+    const b = chip.dataset.brand;
+    device.setState(b === "levin" ? "open" : b, { force: true });
+    brandChips.forEach((c) => c.classList.toggle("is-active", c === chip));
+  });
+});
+
 // --- форма листа ожидания
 initWaitlistForm(document.getElementById("waitlist-form"));
 

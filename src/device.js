@@ -27,6 +27,14 @@ const EDGE = 0.32; // радиус скругления кромок корпу�
 const SCREEN_W = 4.7;
 const SCREEN_H = 1.57; // экран-миндаль ≈ 3:1, повторяет контур корпуса
 
+// Цвет корпуса: по умолчанию чёрный металл, для брендов — фирменный.
+const BODY_DEFAULT = 0x101114;
+const BRANDS = {
+  sber: { body: 0x0f5f3c },
+  teremok: { body: 0x8a1a1e },
+};
+BRANDS.brand = BRANDS.sber; // панель брендинга стартует со Сбера
+
 // Базовая поза и диапазон поворота по скроллу (≈ 26°).
 const YAW0 = -0.22;
 const YAW_RANGE = 0.46;
@@ -291,6 +299,7 @@ export function createDevice(canvas, { reducedMotion = false, still = false, dis
       labelA: t.labelA,
       dotsA: t.dotsA,
       linesA: t.linesA,
+      markA: t.markA,
       duration,
       ease,
       onUpdate: () => (dirty = true),
@@ -300,6 +309,26 @@ export function createDevice(canvas, { reducedMotion = false, still = false, dis
     setGlowColor(t.glow > 0 ? t.pupil : EYE_COLORS.glow);
     gsap.to(glowState, { opacity: t.glow * 0.55, duration, ease });
     dirty = true;
+  }
+
+  const bodyTarget = new THREE.Color();
+  function setBody(hex, duration) {
+    bodyTarget.set(hex);
+    gsap.killTweensOf(metal.color);
+    gsap.to(metal.color, { r: bodyTarget.r, g: bodyTarget.g, b: bodyTarget.b, duration, ease: "power2.inOut" });
+  }
+
+  // Полностью применить состояние по имени: экран, надпись, знак, цвет корпуса.
+  function applyState(name, duration, ease) {
+    const t = EYE_STATES[name];
+    if (t.label) {
+      eye.label = t.label;
+      eye.labelSize = t.labelSize;
+    }
+    eye.labelColor = t.labelColor ? { ...t.labelColor } : { ...EYE_COLORS.text };
+    if (t.mark) eye.mark = t.mark;
+    applyParams(t, duration, ease);
+    setBody(BRANDS[name]?.body ?? BODY_DEFAULT, Math.max(duration, 0.001));
   }
 
   function setState(name, opts = {}) {
@@ -315,12 +344,8 @@ export function createDevice(canvas, { reducedMotion = false, still = false, dis
       program.kill();
       program = null;
     }
-    if (t.label) {
-      eye.label = t.label;
-      eye.labelSize = t.labelSize;
-    }
     const duration = reducedMotion ? 0 : (opts.duration ?? 0.9);
-    applyParams(t, duration, opts.ease ?? "power2.inOut");
+    applyState(name, duration, opts.ease ?? "power2.inOut");
 
     // --- циклические сценарии ---
     if (name === "pause") {
@@ -348,6 +373,12 @@ export function createDevice(canvas, { reducedMotion = false, still = false, dis
       program.call(swap("М.Л."), null, 6.0);
       program.add(fade(1), 6.0);
       program.to({}, { duration: 8.4 }, 0);
+    } else if (name === "brand" && !reducedMotion) {
+      // Сбер 3,2 с → Теремок 3,2 с → снова Сбер
+      program = gsap.timeline({ repeat: -1 });
+      program.call(() => applyState("teremok", 0.9), null, 3.2);
+      program.call(() => applyState("sber", 0.9), null, 6.4);
+      program.to({}, { duration: 6.4 }, 0);
     } else if (name === "flash" && reducedMotion) {
       ticks = [-1.2, 0.4]; // статичные отметки вместо вспышек
     } else if (name === "dots" && reducedMotion) {

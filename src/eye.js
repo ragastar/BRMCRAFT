@@ -15,6 +15,10 @@ const C = {
   dark: { r: 14, g: 5, b: 7 }, // зрачок в покое
   navy: { r: 16, g: 22, b: 32 }, // зрачок в состоянии «точки» — тёмный холодный
   text: { r: 242, g: 237, b: 228 }, // #F2EDE4
+  // бренды (примеры оформления)
+  sberA: { r: 33, g: 160, b: 56 }, // зелёный
+  sberB: { r: 18, g: 201, b: 208 }, // бирюзовый край градиента
+  gold: { r: 242, g: 183, b: 5 }, // золото Теремка
 };
 export const EYE_COLORS = C;
 
@@ -31,6 +35,7 @@ const BASE = {
   labelA: 0,
   dotsA: 0,
   linesA: 0,
+  markA: 0,
 };
 
 // Целевые параметры глаза по состояниям (панели ссылаются через data-eye).
@@ -52,6 +57,11 @@ export const EYE_STATES = {
   pause: { ...BASE, ringA: 1, pupil: C.glow, glow: 1, spin: 1 },
   // v2: инициалы в зрачке, сменяются — цикл ведёт device.js
   initials: { ...BASE, ringA: 0.3, pupilA: 0, labelA: 1, label: "М.Л.", labelSize: 78 },
+  // бренды: корпус перекрашивает device.js, здесь — экран
+  sber: { ...BASE, ringA: 0.9, ring: C.sberA, pupil: C.sberA, pupilA: 0, glow: 0.5, markA: 1, mark: "sber" },
+  teremok: { ...BASE, ringA: 0.9, ring: C.gold, pupil: C.gold, pupilA: 0, glow: 0.35, labelA: 1, label: "Т", labelSize: 130, labelColor: C.gold },
+  // панель «В цветах вашего бренда»: device.js по кругу показывает sber → teremok
+  brand: { ...BASE, ringA: 0.9, ring: C.sberA, pupil: C.sberA, pupilA: 0, glow: 0.5, markA: 1, mark: "sber" },
 };
 
 // «Пауза» внутри состояния pause: запись остановлена, зрачок белый.
@@ -79,6 +89,9 @@ export function createEyeParams() {
     dotsA: 0, // точки в зрачке
     linesA: 0, // строки вместо колец
     pulse: 0, // вспышка зрачка 0..1 (ставится покадрово)
+    labelColor: { ...C.text }, // цвет надписи
+    mark: null, // знак бренда вместо зрачка ("sber")
+    markA: 0, // его прозрачность
   };
 }
 
@@ -154,10 +167,12 @@ export function drawEye(ctx, p, angle, phase = 0, ticks = []) {
     ctx.rotate(angle);
     const n = DASHES.length;
     ctx.lineWidth = 3;
+    const gradientRings = p.mark === "sber" && p.markA > 0.5;
     for (let i = 0; i < n; i++) {
       const t = i / (n - 1);
       const r = R_IN + (R_OUT - R_IN) * t;
-      ctx.strokeStyle = rgba(p.ring, p.ringA * (0.95 - 0.55 * t));
+      const col = gradientRings ? mix(C.sberA, C.sberB, t) : p.ring;
+      ctx.strokeStyle = rgba(col, p.ringA * (0.95 - 0.55 * t));
       ctx.setLineDash(DASHES[i]);
       ctx.lineDashOffset = i * 13;
       ctx.beginPath();
@@ -295,9 +310,31 @@ export function drawEye(ctx, p, angle, phase = 0, ticks = []) {
     TEXT_LINES.forEach((s, i) => ctx.fillText(s, x, y0 + i * lh));
   }
 
-  // надпись вместо зрачка («Л», инициалы)
+  // знак бренда вместо зрачка: диск с градиентом и белая галочка (пример оформления)
+  if (p.markA > 0.01 && p.mark === "sber") {
+    const R = PUPIL_R * 1.3;
+    const g = ctx.createLinearGradient(cx - R, cy + R, cx + R, cy - R);
+    g.addColorStop(0, rgba(C.sberA, p.markA));
+    g.addColorStop(1, rgba(C.sberB, p.markA));
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, TAU);
+    ctx.fill();
+    ctx.strokeStyle = `rgba(255,255,255,${clamp01(p.markA)})`;
+    ctx.lineWidth = 9;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.beginPath();
+    ctx.moveTo(cx - R * 0.45, cy + R * 0.02);
+    ctx.lineTo(cx - R * 0.08, cy + R * 0.38);
+    ctx.lineTo(cx + R * 0.62, cy - R * 0.42);
+    ctx.stroke();
+    ctx.lineCap = "butt";
+  }
+
+  // надпись вместо зрачка («Л», инициалы, буква бренда)
   if (p.labelA > 0.01 && p.label) {
-    ctx.fillStyle = rgba(C.text, p.labelA);
+    ctx.fillStyle = rgba(p.labelColor || C.text, p.labelA);
     ctx.font = `800 ${p.labelSize}px "Unbounded", system-ui, sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";

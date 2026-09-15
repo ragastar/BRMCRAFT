@@ -197,6 +197,32 @@ a {
   margin-top: 4px;
 }
 
+/* кнопки-переключатели */
+.chip {
+  font-family: var(--font-head);
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.chip.is-active {
+  color: var(--text);
+  border-color: var(--muted);
+}
+
+.brands {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 18px 0 12px;
+}
+
 /* доказательства под заголовком */
 .proofs {
   display: grid;

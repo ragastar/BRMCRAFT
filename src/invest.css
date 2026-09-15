@@ -226,24 +226,6 @@
   margin: 0 0 22px;
 }
 
-.chip {
-  font-family: var(--font-head);
-  font-weight: 500;
-  font-size: 12px;
-  letter-spacing: 0.03em;
-  padding: 10px 14px;
-  border: 1px solid var(--line);
-  background: none;
-  color: var(--muted);
-  cursor: pointer;
-  border-radius: 0;
-}
-
-.chip.is-active {
-  color: var(--text);
-  border-color: var(--muted);
-}
-
 .calc__grid {
   display: grid;
   gap: 24px;
