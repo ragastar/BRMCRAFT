@@ -47,6 +47,8 @@ for (const s of sizes) {
   }
   await page.waitForTimeout(2200);
   await page.screenshot({ path: `${out}/${s.name}-top.png` });
+  // SHOT_FULL=1 — вся страница целиком (для длинных страниц без панелей)
+  if (process.env.SHOT_FULL) await page.screenshot({ path: `${out}/${s.name}-full.png`, fullPage: true });
   if (onlyTop) {
     await ctx.close();
     continue;

@@ -78,7 +78,7 @@ function makeGlowTexture() {
   return t;
 }
 
-export function createDevice(canvas, { reducedMotion = false } = {}) {
+export function createDevice(canvas, { reducedMotion = false, still = false, distanceScale = 1 } = {}) {
   const renderer = new THREE.WebGLRenderer({
     canvas,
     antialias: true,
@@ -239,7 +239,9 @@ export function createDevice(canvas, { reducedMotion = false } = {}) {
   scene.add(key, rim, fill, edge);
 
   // --- камера: вписываем устройство в сцену при любом соотношении сторон ---
+  let stillIdle = 0; // still: сколько кадров подряд ничего не менялось
   function resize() {
+    stillIdle = 0;
     const w = canvas.clientWidth || 1;
     const h = canvas.clientHeight || 1;
     renderer.setSize(w, h, false);
@@ -248,7 +250,7 @@ export function createDevice(canvas, { reducedMotion = false } = {}) {
     const hfov = 2 * Math.atan(Math.tan(vfov / 2) * camera.aspect);
     const distH = (H * 2.3) / 2 / Math.tan(vfov / 2);
     const distW = (W * 1.25) / 2 / Math.tan(hfov / 2);
-    camera.position.set(0, 0.6, Math.max(distH, distW));
+    camera.position.set(0, 0.6, Math.max(distH, distW) * distanceScale);
     camera.lookAt(0, 0.28, 0); // пластина чуть ниже центра — сверху место шнуру
     camera.updateProjectionMatrix();
   }
@@ -397,6 +399,7 @@ export function createDevice(canvas, { reducedMotion = false } = {}) {
     } else if (currentState === "lines" && !reducedMotion) {
       dirty = true;
     }
+    const changed = dirty;
     if (dirty) {
       drawEye(ectx, eye, angle, phase, ticks);
       eyeTex.needsUpdate = true;
@@ -406,11 +409,16 @@ export function createDevice(canvas, { reducedMotion = false } = {}) {
 
     rig.rotation.y += (targetYaw - rig.rotation.y) * 0.08;
     rig.rotation.x += (targetPitch - rig.rotation.x) * 0.08;
-    if (!reducedMotion) {
+    if (!reducedMotion && !still) {
       // кулон едва качается на шнуре и чуть поворачивается на нём
       hang.rotation.z = Math.sin(t * 0.65) * 0.03;
       hang.rotation.y = Math.sin(t * 0.45) * 0.05;
       hang.rotation.x = Math.sin(t * 0.8) * 0.01;
+    }
+    if (still) {
+      // статичная сцена: после того как всё устоялось, кадры не рендерим
+      stillIdle = changed ? 0 : stillIdle + 1;
+      if (stillIdle > 40) return;
     }
     renderer.render(scene, camera);
   }

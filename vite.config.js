@@ -9,7 +9,7 @@ export default defineConfig({
     sourcemap: false,
     // index.html — вариант 1, v2.html — вариант 2 (расширенный: +5 панелей)
     rollupOptions: {
-      input: { main: "index.html", v2: "v2.html" },
+      input: { main: "index.html", v2: "v2.html", invest: "invest-7k2m9x/index.html" },
     },
   },
 });
