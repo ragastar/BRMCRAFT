@@ -1,77 +1,150 @@
-// Финмодель «Левин»: цикл по 24 месяцам. Константы совпадают с таблицей
-// levin-finmodel.xlsx (public/files). Чистая функция, без DOM — её же
-// можно гонять под Node для проверки.
+// Финмодель «Левин» под корпоративные продажи: цикл по 24 месяцам.
+// Чистые функции без DOM — их же гоняем под Node для проверки.
+//
+// Как продаём: компаниям по счёту, 14 900 ₽ за устройство, в цене минимальный
+// тариф (200 минут в месяц) на несколько месяцев. После включённого периода
+// часть мест продлевается по цене минимального тарифа. Производство только
+// под предоплату, поэтому компоненты под заказы в «нужно вложить» не сидят.
 
-export const DEFAULTS = {
-  sales: 30, // продаж в месяц после первой партии
-  share: 0.65, // доля покупателей, которые платят подписку
-  churn: 0.04, // отток подписчиков в месяц
-  minutes: 400, // минут на пользователя в месяц
+export const ASSUMPTIONS = {
+  price: 14900, // цена устройства для компаний, не выше 14 900
+  cogsEarly: 5200, // себестоимость, пока накопительно < 300 штук
+  cogsLate: 3900,
+  cogsThreshold: 300,
+  tier: 490, // минимальный тариф после включённого периода, ₽ за место в месяц (ДОПУЩЕНИЕ)
   ppm: 0.6, // цена минуты распознавания, ₽
+  userFixed: 40, // обслуживание одного места сверх минут, ₽ в месяц
+  commission: 0.1, // комиссия продавца от выручки за устройства
+  acqTax: 0.09, // эквайринг 3 % + налог 6 % от всей выручки
+  fixed: 265000, // постоянные расходы в месяц: команда, цех, облако
+  marketing: { from: 2, to: 6, perMonth: 60000 }, // реклама и аутбаунд на сезон гипотез
+  oneOff: { 1: 150000, 2: 300000, 5: 120000 }, // прототип; демо-партия и материалы; декларация ЭМС и юрист
+  firstSalesMonth: 3, // первые счета — с третьего месяца
+  rampMonths: 3, // разгон продаж до плановых за три месяца
+  months: 24,
 };
 
-const BATCH_PRICE = 14900; // первая партия, 100 штук
-const PRICE = 17900; // цена после партии
-const SUB = 990; // подписка в месяц
-const COGS_EARLY = 5200; // себестоимость, пока накопительно < 300 штук
-const COGS_LATE = 3900;
-const COGS_THRESHOLD = 300;
-const MINUTE_FIXED = 40; // обслуживание пользователя сверх минут, ₽/мес
-const ACQUIRING = 0.03;
-const TAX = 0.06;
-const CAC = 3000; // привлечение за устройство с 4-го месяца
-const FIXED = 265000; // постоянные в месяц
-const ONE_OFF = { 1: 250000, 4: 300000 };
-const MONTHS = 24;
+// Три готовых сценария. Параметры — то, что крутят ползунками.
+export const SCENARIOS = {
+  careful: { deals: 2, devices: 25, growth: 0.03, included: 12, renewal: 0.4, churn: 0.06, minutes: 250 },
+  base: { deals: 3, devices: 20, growth: 0.05, included: 6, renewal: 0.6, churn: 0.04, minutes: 200 },
+  aggressive: { deals: 5, devices: 30, growth: 0.1, included: 3, renewal: 0.7, churn: 0.03, minutes: 200 },
+};
+export const DEFAULTS = SCENARIOS.base;
 
-export function simulate({ sales, share, churn, minutes, ppm } = DEFAULTS) {
-  const cumulative = [];
-  const monthly = [];
+// Стоимость обслуживания одного места в месяц при заданных минутах.
+export const seatCost = (minutes, a = ASSUMPTIONS) => minutes * a.ppm + a.userFixed;
+
+export function simulate(p = DEFAULTS, a = ASSUMPTIONS) {
+  const rows = [];
+  const cohorts = [];
   let cum = 0;
-  let unitsPrev = 0;
-  let paid = 0;
   let unitsTotal = 0;
+  const base = p.deals * p.devices;
 
-  for (let m = 1; m <= MONTHS; m++) {
-    // продажи устройств
-    let units;
-    let price;
-    if (m <= 3) {
-      units = 33; // партия расходится по 33 в месяцы 1–3
-      price = BATCH_PRICE;
-    } else {
-      units = Math.round(sales * Math.pow(1.1, m - 4)); // рост 10% в месяц
-      price = PRICE;
+  for (let m = 1; m <= a.months; m++) {
+    // продажи устройств: разгон, потом рост на growth в месяц
+    let units = 0;
+    if (m >= a.firstSalesMonth) {
+      const k = m - a.firstSalesMonth; // 0 в первый месяц продаж
+      const ramp = Math.min(1, (k + 1) / a.rampMonths);
+      const grown = k >= a.rampMonths ? Math.pow(1 + p.growth, k - a.rampMonths + 1) : 1;
+      units = Math.round(base * ramp * grown);
     }
-    const cogs = unitsTotal < COGS_THRESHOLD ? COGS_EARLY : COGS_LATE;
+    const cogs = unitsTotal < a.cogsThreshold ? a.cogsEarly : a.cogsLate;
     unitsTotal += units;
+    if (units > 0) cohorts.push({ units, sold: m, paid: 0 });
 
-    // подписчики: бесплатный год у партии, платные — из прошлых продаж
-    const free = m <= 12 ? 100 : m === 13 ? 67 : m === 14 ? 33 : 0;
-    let fresh = 0;
-    if (m >= 4) fresh += unitsPrev * share;
-    if (m >= 13 && m <= 15) fresh += 33 * share; // партия после бесплатного года
-    paid = paid * (1 - churn) + fresh;
+    // подписки по когортам: включённый период → продление → отток
+    let included = 0;
+    let paid = 0;
+    for (const c of cohorts) {
+      const age = m - c.sold;
+      if (age < p.included) included += c.units;
+      else if (age === p.included) {
+        c.paid = c.units * p.renewal;
+        paid += c.paid;
+      } else {
+        c.paid *= 1 - p.churn;
+        paid += c.paid;
+      }
+    }
 
-    const revenue = units * price + paid * SUB;
-    const service = (paid + free) * (minutes * ppm + MINUTE_FIXED);
-    const cac = m >= 4 ? units * CAC : 0;
-    const result =
-      revenue - units * cogs - service - revenue * (ACQUIRING + TAX) - cac - FIXED - (ONE_OFF[m] || 0);
-
+    const deviceRevenue = units * a.price;
+    const subRevenue = paid * a.tier;
+    const revenue = deviceRevenue + subRevenue;
+    const service = (included + paid) * seatCost(p.minutes, a);
+    const marketing = m >= a.marketing.from && m <= a.marketing.to ? a.marketing.perMonth : 0;
+    const costs =
+      units * cogs +
+      service +
+      revenue * a.acqTax +
+      deviceRevenue * a.commission +
+      a.fixed +
+      marketing +
+      (a.oneOff[m] || 0);
+    const result = revenue - costs;
     cum += result;
-    monthly.push(result);
-    cumulative.push(cum);
-    unitsPrev = units;
+    rows.push({ m, units, unitsTotal, included, paid: Math.round(paid), revenue, costs, result, cum });
   }
 
+  const cumulative = rows.map((r) => r.cum);
   const minCum = Math.min(...cumulative);
-  const breakeven = cumulative.findIndex((c) => c >= 0); // -1, если не выходит
+  const be = cumulative.findIndex((c) => c >= 0);
   return {
+    rows,
     cumulative,
-    monthly,
     invest: Math.max(0, -minCum),
-    breakevenMonth: breakeven === -1 ? null : breakeven + 1,
-    total: cumulative[MONTHS - 1],
+    breakevenMonth: be === -1 ? null : be + 1,
+    total: cumulative[a.months - 1],
+    unitsTotal,
   };
+}
+
+// Возврат инвестору: транши берутся по потребности, вся чистая прибыль после
+// выхода в плюс идёт инвестору, пока не вернётся весь раунд.
+export function payback(sim, round) {
+  const need = Math.max(0, round - sim.invest); // часть раунда, которая не была потрачена
+  const idx = sim.cumulative.findIndex((c) => c >= need);
+  const month = idx === -1 ? null : idx + 1;
+  return {
+    month,
+    units: month ? sim.rows[idx].unitsTotal : null,
+    multiple: round > 0 ? sim.total / round : null,
+  };
+}
+
+// Юнит-экономика при текущих параметрах.
+export function unitEconomics(p = DEFAULTS, a = ASSUMPTIONS) {
+  const sc = seatCost(p.minutes, a);
+  const device = a.price * (1 - a.acqTax - a.commission) - a.cogsEarly - p.included * sc;
+  const seat = a.tier * (1 - a.acqTax) - sc;
+  return { device, seat, seatCost: sc, commission: a.price * a.commission };
+}
+
+// Чувствительность: как меняется результат за 24 месяца при сдвиге каждого
+// параметра на один шаг ползунка.
+export function sensitivity(p, steps, a = ASSUMPTIONS) {
+  const baseTotal = simulate(p, a).total;
+  return Object.entries(steps).map(([key, step]) => {
+    const up = simulate({ ...p, [key]: p[key] + step }, a).total - baseTotal;
+    return { key, delta: up };
+  });
+}
+
+// Таблица «Что вернётся инвестору»: сколько устройств возвращают раунд
+// в разных условиях продажи (без постоянных расходов).
+export function paybackTable(round, a = ASSUMPTIONS) {
+  const sc = seatCost(200, a);
+  const rows = [];
+  for (const [channel, commission] of [
+    ["свой продавец, 10 %", 0.1],
+    ["агентство, 25 %", 0.25],
+  ]) {
+    for (const included of [3, 12]) {
+      const contribution = a.price * (1 - a.acqTax - commission) - a.cogsEarly - included * sc;
+      rows.push({ channel, included, contribution, units: contribution > 0 ? Math.ceil(round / contribution) : null });
+    }
+  }
+  return rows;
 }

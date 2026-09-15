@@ -216,3 +216,159 @@
     height: 180px;
   }
 }
+
+/* ---------- калькулятор v2: сценарии, юнит-экономика, инвестор, таблицы ---------- */
+
+.calc__scenarios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 22px;
+}
+
+.chip {
+  font-family: var(--font-head);
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: 0;
+}
+
+.chip.is-active {
+  color: var(--text);
+  border-color: var(--muted);
+}
+
+.calc__grid {
+  display: grid;
+  gap: 24px;
+}
+
+.kv {
+  margin: 0;
+  border-top: 1px solid var(--line);
+}
+
+.kv div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 15px;
+}
+
+.kv dt {
+  color: var(--muted);
+}
+
+.kv dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.calc__chartwrap {
+  position: relative;
+  margin: 4px 0 26px;
+}
+
+.calc__marker {
+  position: absolute;
+  top: 100%;
+  transform: translateX(-50%);
+  margin-top: -2px;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.calc__marker::before {
+  content: "";
+  display: block;
+  width: 1px;
+  height: 8px;
+  margin: 0 auto 4px;
+  background: var(--muted);
+}
+
+.calc__hover {
+  margin: 30px 0 0 !important;
+  min-height: 1.4em;
+}
+
+.calc__investor {
+  padding: 22px 0 6px;
+  border-top: 1px solid var(--line);
+}
+
+.calc__results--investor {
+  margin-top: 6px;
+}
+
+.calc__sens {
+  padding-top: 8px;
+}
+
+.calc__table {
+  margin: 8px 0 18px;
+}
+
+.calc__table summary {
+  cursor: pointer;
+  font-family: var(--font-head);
+  font-weight: 500;
+  font-size: 13px;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+  padding: 10px 0;
+  list-style: none;
+}
+
+.calc__table summary::before {
+  content: "+ ";
+}
+
+.calc__table[open] summary::before {
+  content: "− ";
+}
+
+.calc__table .table-scroll {
+  margin-top: 8px;
+}
+
+.calc__assumptions {
+  margin-top: 8px;
+  line-height: 1.5;
+}
+
+.hypotheses {
+  padding-left: 22px;
+  margin: 0 0 22px;
+}
+
+.hypotheses li {
+  margin: 0 0 10px;
+  max-width: 64ch;
+}
+
+.hypotheses b {
+  font-weight: 500;
+}
+
+@media (min-width: 900px) {
+  .calc__grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 300px);
+    gap: 40px;
+  }
+
+  .kv div {
+    flex-direction: column;
+    gap: 2px;
+  }
+}

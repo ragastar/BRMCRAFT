@@ -20,7 +20,11 @@
     <div class="page">
       <header class="topbar">
         <a class="wordmark" href="#top">Левин</a>
-        <a class="toplink" href="#waitlist">Лист ожидания</a>
+        <nav class="topbar__nav">
+          <a href="#compare">Сравнение</a>
+          <a href="#business">Для компаний</a>
+          <a class="toplink" href="#waitlist">Лист ожидания</a>
+        </nav>
       </header>
 
       <div class="stage" id="stage" aria-hidden="true">
@@ -37,10 +41,16 @@
               Без VPN. Оплата картой Мир.
             </p>
             <a class="link" href="#waitlist">Встать в лист ожидания</a>
+            <div class="proofs">
+              <div><b>14 900 ₽</b><span>цена устройства, подписка в цене</span></div>
+              <div><b>10 минут</b><span>от конца встречи до письма с итогами</span></div>
+              <div><b>Мир</b><span>оплата картой или по счёту компании</span></div>
+              <div><b>Россия</b><span>распознавание и облако</span></div>
+            </div>
           </div>
         </section>
 
-        <section class="panel" data-eye="half">
+        <section class="panel" id="compare" data-eye="half">
           <div class="panel__text">
             <h2>Сейчас такие штуки стоят двадцать тысяч. А&nbsp;потом за них нельзя заплатить.</h2>
             <p class="muted">
@@ -49,11 +59,25 @@
             </p>
           </div>
           <div class="panel__aside">
-            <ul class="compare">
-              <li><span>Plaud Note Pro</span><span class="price">41 100 ₽</span></li>
-              <li><span>Plaud Note</span><span class="price">23 200 ₽</span></li>
-              <li class="is-ours"><span>Левин</span><span class="price">14 900 ₽</span></li>
-            </ul>
+            <div class="table-scroll">
+              <table class="table table--compare">
+                <thead>
+                  <tr><th></th><th>Plaud Note Pro</th><th>Plaud Note</th><th>Левин</th></tr>
+                </thead>
+                <tbody>
+                  <tr><th>Цена</th><td>41 100 ₽</td><td>23 200 ₽</td><td class="is-ours">14 900 ₽</td></tr>
+                  <tr><th>Оплата подписки из России</th><td>зарубежной картой, через VPN</td><td>зарубежной картой, через VPN</td><td class="is-ours">картой Мир или по счёту</td></tr>
+                  <tr><th>Где данные</th><td>за рубежом</td><td>за рубежом</td><td class="is-ours">в России</td></tr>
+                  <tr><th>Подписка</th><td>отдельно</td><td>отдельно</td><td class="is-ours">минимальный тариф в цене</td></tr>
+                  <tr><th>Итоги встречи</th><td>в приложении</td><td>в приложении</td><td class="is-ours">письмом на почту</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="demand" id="demand" hidden>
+              <p class="eyebrow">Спрос «диктофон с ИИ» в Яндексе, запросов в месяц</p>
+              <svg class="demand__chart" viewBox="0 0 480 120" preserveAspectRatio="none" aria-hidden="true"></svg>
+              <p class="demand__caption muted small"></p>
+            </div>
           </div>
         </section>
 
@@ -74,6 +98,32 @@
               Полная расшифровка на русском, короткие итоги, список задач и кто что обещал. Каждая
               встреча — отдельное письмо, ничего искать не надо.
             </p>
+          </div>
+          <div class="panel__aside">
+            <div class="mail" aria-label="Пример письма с итогами встречи">
+              <div class="mail__head">
+                <span class="mail__from">Левин</span>
+                <span class="mail__subject">Встреча с «Ромашка-Консалт» — 12 сентября, 41 мин</span>
+              </div>
+              <p class="mail__h">Итоги</p>
+              <ul>
+                <li>Договорились о пилоте на 20 устройств в октябре.</li>
+                <li>Счёт выставляем после согласования гравировки.</li>
+                <li>Юристам нужен текст согласия на запись.</li>
+              </ul>
+              <p class="mail__h">Задачи</p>
+              <ul>
+                <li>Михаил — отправить предложение до четверга.</li>
+                <li>Анна — согласовать логотип для гравировки.</li>
+                <li>Юристы — текст согласия до 20 сентября.</li>
+              </ul>
+              <p class="mail__h">Кто что обещал</p>
+              <ul>
+                <li>Анна: подтвердить бюджет в понедельник.</li>
+                <li>Михаил: демо-устройство курьером во вторник.</li>
+              </ul>
+              <p class="mail__foot">Пример письма. Полная расшифровка — во вложении.</p>
+            </div>
           </div>
         </section>
 
@@ -163,25 +213,50 @@
               <li>
                 <span class="n">01</span>
                 <div>
-                  <h3>Версия 1 — почта</h3>
+                  <h3>Версия 1 — почта <span class="roadmap__when">декабрь 2026</span></h3>
                   <p>Все расшифровки письмом, ноль настройки.</p>
                 </div>
               </li>
               <li>
                 <span class="n">02</span>
                 <div>
-                  <h3>Версия 2 — ваши инструменты</h3>
+                  <h3>Версия 2 — ваши инструменты <span class="roadmap__when">весна 2027</span></h3>
                   <p>Telegram, Obsidian, Notion, таблицы.</p>
                 </div>
               </li>
               <li>
                 <span class="n">03</span>
                 <div>
-                  <h3>Версия 3 — своё приложение</h3>
+                  <h3>Версия 3 — своё приложение <span class="roadmap__when">осень 2027</span></h3>
                   <p>Поиск по всем встречам, память о людях и договорённостях.</p>
                 </div>
               </li>
             </ol>
+          </div>
+        </section>
+
+        <section class="panel" id="business" data-eye="letter">
+          <div class="panel__text">
+            <h2>Для компаний</h2>
+            <p class="muted">
+              Устройство и работа команды с ИИ по одному счёту. Цена не выше 14 900 ₽, минимальный
+              тариф включён.
+            </p>
+          </div>
+          <div class="panel__aside">
+            <table class="table table--biz">
+              <tbody>
+                <tr><th>Устройство</th><td>14 900 ₽, гравировка бесплатно для первых ста заказов</td></tr>
+                <tr><th>В цене</th><td>минимальный тариф, 200 минут в месяц на сотрудника, на 3–12 месяцев в зависимости от объёма</td></tr>
+                <tr><th>После</th><td>490 ₽ за место в месяц или основной тариф 990 ₽</td></tr>
+                <tr><th>Руководителю</th><td>кабинет: кто пользуется, сколько встреч, что в итогах</td></tr>
+                <tr><th>Команде</th><td>воркшоп при заказе от 10 устройств</td></tr>
+                <tr><th>Бренду</th><td>логотип на корпусе и имя на экране; от 10 штук — свой цвет корпуса и версии в стилистике вашего бренда</td></tr>
+                <tr><th>Оплата</th><td>по счёту, закрывающие документы</td></tr>
+              </tbody>
+            </table>
+            <!-- TODO: адрес для корпоративных запросов владелец даст отдельно -->
+            <a class="btn btn--inline" href="mailto:?subject=%D0%97%D0%B0%D0%BA%D0%B0%D0%B7%20%D0%9B%D0%B5%D0%B2%D0%B8%D0%BD%20%D0%B4%D0%BB%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%BF%D0%B0%D0%BD%D0%B8%D0%B8">Запросить предложение</a>
           </div>
         </section>
 
@@ -234,6 +309,10 @@
               <p>Честная запись с согласием собеседника.</p>
               <p>Личный контекст, который забираешь с собой.</p>
             </div>
+            <p class="muted small sources">
+              Источники: <a href="https://www.plaud.ai/" rel="noopener">Plaud</a>,
+              <a href="https://www.ozon.ru/search/?text=plaud" rel="noopener">Ozon</a>.
+            </p>
           </div>
           <div class="panel__text panel__text--after">
             <p class="muted">

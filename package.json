@@ -6,6 +6,8 @@
   "description": "Лендинг устройства «Левин» — ИИ-диктофон, который работает в России",
   "scripts": {
     "dev": "vite",
+    "prebuild": "node scripts/make-v2.mjs",
+    "make-v2": "node scripts/make-v2.mjs",
     "build": "vite build",
     "preview": "vite preview --port 4173 --strictPort",
     "shots": "node scripts/shots.mjs"

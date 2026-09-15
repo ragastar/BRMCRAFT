@@ -4,6 +4,8 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
 import { createDevice } from "./device.js";
 import { initWaitlistForm } from "./form.js";
+import { renderDemand } from "./demand.js";
+import { WORDSTAT } from "./data/wordstat.js";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -60,3 +62,7 @@ ScrollTrigger.create({
 
 // --- форма листа ожидания
 initWaitlistForm(document.getElementById("waitlist-form"));
+
+// --- график спроса (скрыт, пока нет данных Вордстата)
+renderDemand(document.getElementById("demand"), WORDSTAT);
+ScrollTrigger.refresh();

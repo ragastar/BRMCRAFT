@@ -13,4 +13,4 @@ const device = createDevice(document.getElementById("device"), {
 device.setState("cold");
 window.__device = device;
 
-initCalculator(document.getElementById("calc"));
+initCalculator(document.getElementById("calc"), { paybackRoot: document.getElementById("payback-table") });

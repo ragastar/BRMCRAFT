@@ -105,6 +105,15 @@ a {
   color: var(--muted);
 }
 
+.topbar__nav {
+  display: flex;
+  gap: 22px;
+}
+
+.topbar__nav a:not(.toplink) {
+  display: none; /* на мобильном только «Лист ожидания» */
+}
+
 .topbar .wordmark {
   color: var(--text);
 }
@@ -151,7 +160,7 @@ a {
 .panel--hero .name {
   font-family: var(--font-head);
   font-weight: 800;
-  font-size: clamp(40px, 11vw, 72px);
+  font-size: clamp(36px, 10vw, 60px);
   line-height: 1;
   letter-spacing: 0.02em;
   margin: 0 0 12px;
@@ -186,6 +195,201 @@ a {
   border-bottom: 1px solid var(--muted);
   padding-bottom: 3px;
   margin-top: 4px;
+}
+
+/* доказательства под заголовком */
+.proofs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 20px;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+  max-width: 560px;
+}
+
+.proofs b {
+  display: block;
+  font-family: var(--font-head);
+  font-weight: 500;
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.proofs span {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+  margin-top: 4px;
+}
+
+/* таблицы */
+.small {
+  font-size: 14px;
+}
+
+.table-scroll {
+  overflow-x: auto;
+  margin: 0 0 14px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.table th,
+.table td {
+  text-align: left;
+  vertical-align: top;
+  padding: 10px 12px 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.table th {
+  font-family: var(--font-head);
+  font-weight: 300;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.table tbody th {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 15px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.table .is-ours {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.table--tight th,
+.table--tight td {
+  padding-top: 7px;
+  padding-bottom: 7px;
+  font-size: 14px;
+}
+
+.table--compare td {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+@media (max-width: 599px) {
+  /* на узком экране без прокрутки: Plaud Note Pro против Левина */
+  .table--compare th:nth-child(3),
+  .table--compare td:nth-child(3) {
+    display: none;
+  }
+
+  .table--compare th,
+  .table--compare td {
+    font-size: 13px;
+    padding-right: 8px;
+  }
+}
+
+.table--biz th {
+  width: 34%;
+  color: var(--muted);
+}
+
+.is-neg {
+  color: var(--red);
+}
+
+.sources a {
+  color: var(--muted);
+}
+
+/* график спроса */
+.demand {
+  margin-top: 22px;
+}
+
+.demand__chart {
+  display: block;
+  width: 100%;
+  height: 110px;
+}
+
+.demand__caption {
+  margin-top: 8px !important;
+}
+
+/* макет письма */
+.mail {
+  border: 1px solid var(--line);
+  padding: 18px 20px 14px;
+  font-size: 15px;
+  max-width: 520px;
+}
+
+.mail__head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 12px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+}
+
+.mail__from {
+  font-family: var(--font-head);
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.mail__subject {
+  font-weight: 500;
+}
+
+.mail__h {
+  font-family: var(--font-head);
+  font-weight: 500;
+  font-size: 13px;
+  margin: 12px 0 6px !important;
+}
+
+.mail ul {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+}
+
+.mail li {
+  margin: 3px 0;
+}
+
+.mail__foot {
+  margin: 14px 0 0 !important;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.roadmap__when {
+  display: block;
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 2px;
 }
 
 /* сравнение цен */
@@ -505,11 +709,19 @@ a {
   }
 
   .panel--hero .name {
-    font-size: 84px;
+    font-size: 60px;
   }
 
   .panel--hero h1 {
-    font-size: 30px;
+    font-size: 27px;
+  }
+
+  .topbar__nav a:not(.toplink) {
+    display: inline;
+  }
+
+  .proofs {
+    grid-template-columns: repeat(4, 1fr);
   }
 
   .stats {
